@@ -1,6 +1,5 @@
 package com.tu.health.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -12,38 +11,84 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = PrimaryAccent,
+    onPrimary = NavyCharcoal,
+    primaryContainer = MutedTeal,
+    onPrimaryContainer = White,
+
+    secondary = MutedIndigo,
+    onSecondary = White,
+    secondaryContainer = MutedPurple,
+    onSecondaryContainer = White,
+
+    tertiary = MutedTeal,
+    onTertiary = White,
+    tertiaryContainer = MutedPurple,
+    onTertiaryContainer = White,
+
+    background = NavyCharcoal,
+    onBackground = White,
+    surface = Grey900,
+    surfaceVariant = Grey700,
+    surfaceDim = Grey1000,
+    surfaceContainer = Grey800,
+    surfaceContainerHighest = Grey800,
+    onSurface = White,
+    onSurfaceVariant = Grey500,
+
+    error = Error,
+    onError = White,
+    onErrorContainer = Error,
+
+    outline = Grey700,
+    outlineVariant = Grey500
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = PrimaryAccent,
+    onPrimary = Grey900,
+    primaryContainer = TealSoft,
+    onPrimaryContainer = Grey900,
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    secondary = IndigoSoft,
+    onSecondary = White,
+    secondaryContainer = PurpleSoft,
+    onSecondaryContainer = Grey900,
+
+    tertiary = TealSoft,
+    onTertiary = Grey900,
+    tertiaryContainer = PurpleSoft,
+    onTertiaryContainer = White,
+
+    background = WhiteLilac,
+    onBackground = Grey900,
+    surface = White,
+    surfaceVariant = Grey300,
+    surfaceDim = Grey400,
+    surfaceContainer = Grey100,
+    surfaceContainerHighest = Grey300,
+    onSurface = Grey900,
+    onSurfaceVariant = Grey700,
+
+    error = Error,
+    onError = White,
+    onErrorContainer = Grey900,
+
+    outline = Grey300,
+    outlineVariant = Grey500
 )
 
 @Composable
 fun HealthAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (darkTheme) dynamicDarkColorScheme(context)
+            else dynamicLightColorScheme(context)
         }
 
         darkTheme -> DarkColorScheme
@@ -53,6 +98,7 @@ fun HealthAppTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = Shapes,
         content = content
     )
 }
