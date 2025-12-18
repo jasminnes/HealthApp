@@ -28,7 +28,6 @@ fun NavigationGraph(
 ) {
     val isLoggedIn by startViewModel.isLoggedIn.collectAsState()
     val isLoading by startViewModel.isLoading.collectAsState()
-    val navigateToAuth by startViewModel.navigateToAuthScreen.collectAsState()
 
     if (!isLoading) {
         val bottomBarState = rememberSaveable { mutableStateOf(true) }
@@ -44,7 +43,7 @@ fun NavigationGraph(
         bottomBarState.value = currentRoute !in navOffScreens
 
         // Navigate to auth screen if session expired or missing
-        if (navigateToAuth) {
+        if (!isLoggedIn) {
             LaunchedEffect(Unit) {
                 navController.navigate(Screen.Authentication.route) {
                     popUpTo(0) { inclusive = true }

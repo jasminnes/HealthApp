@@ -21,9 +21,6 @@ class StartViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _navigateToAuthScreen = MutableStateFlow(false)
-    val navigateToAuthScreen: StateFlow<Boolean> = _navigateToAuthScreen
-
     init {
         observeSession()
     }
@@ -31,20 +28,9 @@ class StartViewModel @Inject constructor(
     private fun observeSession() {
         viewModelScope.launch {
             secureTokenStore.accessToken.collectLatest { token ->
-                if (token.isNullOrBlank()) {
-                    _isLoggedIn.value = false
-                    _navigateToAuthScreen.value = true
-                } else {
-                    _isLoggedIn.value = true
-                }
+                _isLoggedIn.value = !token.isNullOrBlank()
                 _isLoading.value = false
             }
-        }
-    }
-
-    fun logout() {
-        viewModelScope.launch {
-            secureTokenStore.clear()
         }
     }
 }

@@ -1,9 +1,7 @@
 package com.tu.health.ui.screens.authentication
 
-import android.icu.text.DateFormat
 import android.icu.text.SimpleDateFormat
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,22 +12,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -38,8 +27,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -59,10 +46,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.tu.health.ui.components.BirthDatePicker
+import com.tu.health.ui.components.BirthDatePickerDialog
 import com.tu.health.viewmodels.authentication.SignUpViewModel
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,6 +63,7 @@ fun SignUpScreen(
     val snackBarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
+    var showDatePicker by remember { mutableStateOf(false) }
 
     // Collect state from ViewModel
     val email by viewModel.email.collectAsState()
@@ -86,14 +75,6 @@ fun SignUpScreen(
     val birthDate by viewModel.birthDate.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // State for date picker dialog
-    var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = getInitialDateMillis(birthDate),
-        yearRange = IntRange(1900, Calendar.getInstance().get(Calendar.YEAR)),
-        initialDisplayMode = DisplayMode.Picker
-    )
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackBarHostState) }
     ) { paddingValues ->
@@ -103,7 +84,6 @@ fun SignUpScreen(
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Scrollable form
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -119,7 +99,7 @@ fun SignUpScreen(
                     textAlign = TextAlign.Center
                 )
 
-                // --- Email ---
+                // Email
                 OutlinedTextField(
                     value = email,
                     onValueChange = viewModel::onEmailChange,
@@ -141,7 +121,7 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // --- Password ---
+                // Password
                 OutlinedTextField(
                     value = password,
                     onValueChange = viewModel::onPasswordChange,
@@ -164,7 +144,7 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // --- Repeat Password ---
+                // Repeat password
                 OutlinedTextField(
                     value = repeatPassword,
                     onValueChange = viewModel::onRepeatPasswordChange,
@@ -187,6 +167,7 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // First name
                 OutlinedTextField(
                     value = firstName,
                     onValueChange = viewModel::onFirstNameChange,
@@ -208,6 +189,7 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Last name
                 OutlinedTextField(
                     value = lastName ?: "",
                     onValueChange = viewModel::onLastNameChange,
@@ -229,14 +211,17 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Birth date picker
                 BirthDatePicker(
                     selectedDate = birthDate,
+                    displayText = "Select date of birth",
                     onClick = { showDatePicker = true },
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Select gender
                 GenderSelector(
                     selected = gender,
                     onSelect = viewModel::onGenderChange
@@ -244,11 +229,16 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(44.dp))
 
+                // Sign up button
                 Button(
                     onClick = {
                         keyboardController?.hide()
                         viewModel.register(
-                            onSuccess = { },
+                            onSuccess = {
+                                navController.navigate("profile") {
+                                    popUpTo("signup") { inclusive = true }
+                                }
+                            },
                             onError = { message ->
                                 scope.launch {
                                     snackBarHostState.showSnackbar(message)
@@ -286,49 +276,20 @@ fun SignUpScreen(
         }
 
         // Date Picker Dialog
-        if (showDatePicker) {
-            DatePickerDialog(
-                onDismissRequest = { showDatePicker = false },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            datePickerState.selectedDateMillis?.let { selectedDate ->
-                                val date = Date(selectedDate)
-                                val dateString = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(date)
-                                viewModel.onBirthDateChange(dateString)
-                            }
-                            showDatePicker = false
-                        },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.secondary
-                        )
-                    ) {
-                        Text("Select", fontWeight = FontWeight.Medium)
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { showDatePicker = false },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.secondary
-                        )
-                    ) {
-                        Text("Cancel")
-                    }
-                },
-                shape = MaterialTheme.shapes.extraLarge
-            ) {
-                DatePicker(
-                    state = datePickerState,
-                    colors = androidx.compose.material3.DatePickerDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        todayDateBorderColor = MaterialTheme.colorScheme.primary,
-                        selectedDayContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedDayContentColor = MaterialTheme.colorScheme.onPrimary,
-                    )
-                )
+        BirthDatePickerDialog(
+            show = showDatePicker,
+            displayText = "Select date of birth",
+            initialDateMillis = getInitialDateMillis(birthDate),
+            onDismiss = { showDatePicker = false },
+            onConfirm = { selectedMillis ->
+                selectedMillis?.let {
+                    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    val dateString = sdf.format(it)
+                    viewModel.onBirthDateChange(dateString)
+                }
+                showDatePicker = false
             }
-        }
+        )
     }
 }
 
@@ -370,101 +331,22 @@ fun GenderSelector(
         }
     }
 }
-@Composable
-fun BirthDatePicker(
-    selectedDate: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .background(
-                color = MaterialTheme.colorScheme.surface
-            )
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 18.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CalendarToday,
-                    contentDescription = "Calendar icon",
-                    tint = if (selectedDate != "") {
-                        MaterialTheme.colorScheme.secondary
-                    } else {
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
-                    },
-                    modifier = Modifier.size(20.dp)
-                )
 
-                Text(
-                    text = if (selectedDate != "") {
-                        getFormattedDateString(selectedDate)
-                    } else {
-                        "Select birth date"
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (selectedDate != "") {
-                        MaterialTheme.colorScheme.onSurface
-                    } else {
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
-                    }
-                )
-            }
-
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = "Open date picker",
-                tint = if (selectedDate != "") {
-                    MaterialTheme.colorScheme.secondary
-                } else {
-                    MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
-                },
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
-}
-
-private fun getFormattedDateString(dateString: String): String {
-    return if (dateString.isNotBlank()) {
-        try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val date = inputFormat.parse(dateString)
-            val displayFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-            displayFormat.format(date ?: Date())
-        } catch (e: Exception) {
-            dateString
-        }
-    } else {
-        "Select birth date"
-    }
-}
-
-private fun getInitialDateMillis(dateString: String?): Long? {
-    return if (!dateString.isNullOrBlank()) {
-        try {
+private fun getInitialDateMillis(dateString: String?): Long {
+    return try {
+        if (!dateString.isNullOrBlank()) {
             val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            format.parse(dateString)?.time
-        } catch (e: Exception) {
-            null
+            format.parse(dateString)?.time ?: defaultDateMillis()
+        } else {
+            defaultDateMillis()
         }
-    } else {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.YEAR, -18)
-        calendar.timeInMillis
+    } catch (_: Exception) {
+        defaultDateMillis()
     }
+}
+
+private fun defaultDateMillis(): Long {
+    val calendar = Calendar.getInstance()
+    calendar.add(Calendar.YEAR, -18)
+    return calendar.timeInMillis
 }

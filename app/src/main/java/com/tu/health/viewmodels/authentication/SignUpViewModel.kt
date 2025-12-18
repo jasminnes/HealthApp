@@ -3,13 +3,10 @@ package com.tu.health.viewmodels.authentication
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tu.health.data.local.SecureTokenStore
 import com.tu.health.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -18,8 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SignUpViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
-    private val secureTokenStore: SecureTokenStore
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     // UI states
@@ -47,47 +43,14 @@ class SignUpViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> get() = _isLoading
 
-    // Tokens from SecureTokenStore
-    val accessToken = secureTokenStore.accessToken.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(),
-        null
-    )
-
-    val refreshToken = secureTokenStore.refreshToken.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(),
-        null
-    )
-
     // Update functions
-    fun onEmailChange(newEmail: String) {
-        _email.value = newEmail
-    }
-
-    fun onPasswordChange(newPassword: String) {
-        _password.value = newPassword
-    }
-
-    fun onRepeatPasswordChange(newRepeatPassword: String) {
-        _repeatPassword.value = newRepeatPassword
-    }
-
-    fun onFirstNameChange(newName: String) {
-        _firstName.value = newName
-    }
-
-    fun onLastNameChange(newSurname: String) {
-        _lastName.value = newSurname
-    }
-
-    fun onGenderChange(gender: String) {
-        _gender.value = gender
-    }
-
-    fun onBirthDateChange(birthDate: String) {
-        _birthDate.value = birthDate
-    }
+    fun onEmailChange(newEmail: String) { _email.value = newEmail }
+    fun onPasswordChange(newPassword: String) { _password.value = newPassword }
+    fun onRepeatPasswordChange(newRepeatPassword: String) { _repeatPassword.value = newRepeatPassword }
+    fun onFirstNameChange(newName: String) { _firstName.value = newName }
+    fun onLastNameChange(newSurname: String) { _lastName.value = newSurname }
+    fun onGenderChange(gender: String) { _gender.value = gender }
+    fun onBirthDateChange(birthDate: String) { _birthDate.value = birthDate }
 
     fun register(
         onSuccess: () -> Unit,
@@ -147,9 +110,6 @@ class SignUpViewModel @Inject constructor(
                     )
 
                     if (loginResult.isSuccess) {
-                        loginResult.getOrThrow().access.let { secureTokenStore.saveAccessToken(it) }
-                        loginResult.getOrThrow().refresh.let { secureTokenStore.saveRefreshToken(it) }
-
                         _isLoading.value = false
                         onSuccess()
                     } else {

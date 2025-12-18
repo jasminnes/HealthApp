@@ -2,7 +2,8 @@ package com.tu.health.di
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import com.tu.health.data.remote.AuthApi
+import com.tu.health.data.remote.AuthAPI
+import com.tu.health.data.remote.ProfileAPI
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -48,6 +49,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideAuthApi(retrofit: Retrofit): AuthApi =
-        retrofit.create(AuthApi::class.java)
+    fun provideAuthAPI(retrofit: Retrofit): AuthAPI =
+        retrofit.create(AuthAPI::class.java)
+
+    @Provides
+    @Singleton
+    fun provideProfileAPI(retrofit: Retrofit): ProfileAPI =
+        retrofit.create(ProfileAPI::class.java)
 }
