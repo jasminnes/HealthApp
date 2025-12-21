@@ -1,4 +1,4 @@
-package com.tu.health.data.remote.dto
+package com.tu.health.data.remote.dto.request
 
 import com.squareup.moshi.Json
 
@@ -12,20 +12,16 @@ data class RegisterRequest(
     @Json(name = "birth_date") val birthDate: String
 )
 
-data class RegisterResponse(
-    @Json(name = "email") val email: String,
-    @Json(name = "first_name") val firstName: String,
-    @Json(name = "last_name") val lastName: String?,
-    @Json(name = "birth_date") val birthDate: String,
-    @Json(name = "gender") val gender: String
-)
-
 data class LoginRequest(
     @Json(name = "email") val email: String,
     @Json(name = "password") val password: String
 )
 
-data class LoginResponse(
-    @Json(name = "access") val access: String,
-    @Json(name = "refresh") val refresh: String,
+data class ChangePasswordRequest(
+    @Json(name = "old_password") val oldPassword: String,
+    @Json(name = "new_password") val newPassword: String,
+)
+
+data class LogoutRequest(
+    @Json(name = "refresh") val refreshToken: String,
 )

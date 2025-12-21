@@ -1,15 +1,28 @@
 package com.tu.health.data.repository
 
-import com.tu.health.data.remote.AuthApi
-import com.tu.health.data.remote.dto.LoginRequest
-import com.tu.health.data.remote.dto.LoginResponse
-import com.tu.health.data.remote.dto.RegisterRequest
-import com.tu.health.data.remote.dto.RegisterResponse
+import com.tu.health.data.local.ProfileDataStore
+import com.tu.health.data.local.SecureTokenStore
+import com.tu.health.data.remote.AuthAPI
+import com.tu.health.data.remote.dto.request.ChangePasswordRequest
+import com.tu.health.data.remote.dto.request.LoginRequest
+import com.tu.health.data.remote.dto.request.LogoutRequest
+import com.tu.health.data.remote.dto.request.RegisterRequest
+import com.tu.health.data.remote.dto.response.DetailResponse
+import com.tu.health.data.remote.dto.response.GetResponse
+import com.tu.health.data.remote.dto.response.LoginResponse
+import com.tu.health.data.remote.dto.response.RegisterResponse
+import kotlinx.coroutines.flow.first
+import org.json.JSONObject
+import retrofit2.HttpException
 import javax.inject.Inject
 
 class AuthRepository @Inject constructor(
-    private val api: AuthApi
+    private val api: AuthAPI,
+    private val secureTokenStore: SecureTokenStore,
+    private val profileDataStore: ProfileDataStore
 ) {
+    val accessTokenFlow = secureTokenStore.accessToken
+    val refreshTokenFlow = secureTokenStore.refreshToken
 
     suspend fun registerUser(
         email: String,
@@ -31,22 +44,114 @@ class AuthRepository @Inject constructor(
                 birthDate = birthDate
             )
             val response = api.register(request)
+
+            profileDataStore.saveEmail(email)
+            profileDataStore.saveFirstName(firstName)
+            profileDataStore.saveLastName(lastName ?: "")
+
+            Result.success(response)
+        } catch (e: HttpException) {
+            val errorBody = e.response()?.errorBody()?.string()
+
+            val rawMessage = try {
+                val json = JSONObject(errorBody ?: "{}")
+
+                when {
+                    json.has("email") ->
+                        json.getJSONArray("email").getString(0)
+
+                    json.has("password") ->
+                        json.getJSONArray("password").getString(0)
+
+                    else -> "Registration failed"
+                }
+            } catch (_: Exception) {
+                "Registration failed"
+            }
+
+            val message = rawMessage
+                .replace("custom user", "User", ignoreCase = true)
+                .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+
+            Result.failure(Exception(message))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun loginUser(email: String, password: String): Result<LoginResponse> {
+        return try {
+            val loginResponse = api.login(LoginRequest(email, password))
+
+            secureTokenStore.saveAccessToken(loginResponse.access)
+            secureTokenStore.saveRefreshToken(loginResponse.refresh)
+            profileDataStore.saveEmail(email)
+
+            val userResponse = api.get("Bearer ${loginResponse.access}")
+
+            profileDataStore.saveFirstName(userResponse.firstName)
+            profileDataStore.saveLastName(userResponse.lastName ?: "")
+
+            Result.success(loginResponse)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+
+    suspend fun logout(): Result<DetailResponse> {
+        return try {
+            val request = LogoutRequest(refreshToken = refreshTokenFlow.first() ?: "")
+            val response = api.logout("Bearer ${accessTokenFlow.first()}", request)
+
+            profileDataStore.clear()
+            secureTokenStore.clear()
+
             Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    suspend fun loginUser(
-        email: String,
-        password: String
-    ): Result<LoginResponse> {
+    suspend fun getUser(): Result<GetResponse> {
         return try {
-            val request = LoginRequest(
-                email = email,
-                password = password
+            val response = api.get("Bearer ${accessTokenFlow.first()}")
+
+            profileDataStore.saveFirstName(response.firstName)
+            profileDataStore.saveLastName(response.lastName ?: "")
+
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun changePassword(
+        oldPassword: String,
+        newPassword: String
+    ): Result<DetailResponse> {
+        return try {
+            val request = ChangePasswordRequest(
+                oldPassword = oldPassword,
+                newPassword = newPassword
             )
-            val response = api.login(request)
+            val response = api.changePassword(
+                "Bearer ${accessTokenFlow.first()}", request
+            )
+
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun delete(): Result<DetailResponse> {
+        return try {
+            val response = api.delete("Bearer ${accessTokenFlow.first()}")
+
+            profileDataStore.clear()
+            secureTokenStore.clear()
+
             Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)

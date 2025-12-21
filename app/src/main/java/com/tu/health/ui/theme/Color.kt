@@ -21,6 +21,7 @@ val Grey700 = Color(0xFF3C4250)
 val Grey500 = Color(0xFF6E7481)
 val Grey400 = Color(0xFFA8ABAF)
 val Grey300 = Color(0xFFD1D5DB)
+val Grey200 = Color(0xFFDEE1E5)
 val Grey100 = Color(0xFFF3F4F6)
 
 val WhiteLilac = Color(0xFFF9FAFD)

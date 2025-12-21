@@ -2,6 +2,7 @@ package com.tu.health.data.local
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,27 +13,31 @@ class ProfileDataStore @Inject constructor(
 ) {
 
     companion object {
-        val BIRTHDATE = stringPreferencesKey("birthdate")
-        val GENDER = stringPreferencesKey("gender")
+        val EMAIL = stringPreferencesKey("email")
+        val FIRST_NAME = stringPreferencesKey("first_name")
+        val LAST_NAME = stringPreferencesKey("last_name")
     }
 
-    val profileFlow = dataStore.data.map {
-        UserProfileLocal(
-            birthdate = it[BIRTHDATE],
-            gender = it[GENDER]
-        )
-    }
+    val profileFlow: Flow<UserProfileLocal> = dataStore.data
+        .map { prefs ->
+            UserProfileLocal(
+                email = prefs[EMAIL] ?: "",
+                firstName = prefs[FIRST_NAME] ?: "",
+                lastName = prefs[LAST_NAME] ?: ""
+            )
+        }
 
-    suspend fun saveBirthdate(value: String) {
-        dataStore.edit { it[BIRTHDATE] = value }
-    }
+    suspend fun saveEmail(value: String) = dataStore.edit { it[EMAIL] = value }
+    suspend fun saveFirstName(value: String) = dataStore.edit { it[FIRST_NAME] = value }
+    suspend fun saveLastName(value: String) = dataStore.edit { it[LAST_NAME] = value }
 
-    suspend fun saveGender(value: String) {
-        dataStore.edit { it[GENDER] = value }
+    suspend fun clear() = dataStore.edit {
+        it.clear()
     }
 }
 
 data class UserProfileLocal(
-    val birthdate: String?,
-    val gender: String?
+    val email: String,
+    val firstName: String,
+    val lastName: String
 )
