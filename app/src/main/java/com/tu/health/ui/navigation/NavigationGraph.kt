@@ -18,6 +18,7 @@ import com.tu.health.ui.screens.authentication.AuthenticationScreen
 import com.tu.health.ui.screens.authentication.LogInScreen
 import com.tu.health.ui.screens.authentication.SignUpScreen
 import com.tu.health.ui.screens.profile.ChangePasswordScreen
+import com.tu.health.ui.screens.profile.OnboardingScreen
 import com.tu.health.ui.screens.profile.ProfileScreen
 import com.tu.health.viewmodels.StartViewModel
 
@@ -27,8 +28,13 @@ fun NavigationGraph(
     navController: NavHostController,
     startViewModel: StartViewModel = hiltViewModel()
 ) {
-    val isLoggedIn by startViewModel.isLoggedIn.collectAsState()
     val isLoading by startViewModel.isLoading.collectAsState()
+    val isLoggedIn by startViewModel.isLoggedInFlow.collectAsState()
+
+    val startDestination = when {
+        !isLoggedIn -> Screen.Authentication.route
+        else -> Screen.Profile.route
+    }
 
     if (!isLoading) {
         val bottomBarState = rememberSaveable { mutableStateOf(true) }
@@ -38,12 +44,12 @@ fun NavigationGraph(
         val navOffScreens = listOf(
             Screen.Authentication.route,
             Screen.SignUp.route,
-            Screen.LogIn.route
+            Screen.LogIn.route,
+            Screen.Onboarding.route
         )
 
         bottomBarState.value = currentRoute !in navOffScreens
 
-        // Navigate to auth screen if session expired or missing
         if (!isLoggedIn) {
             LaunchedEffect(Unit) {
                 navController.navigate(Screen.Authentication.route) {
@@ -62,7 +68,7 @@ fun NavigationGraph(
         ) { paddingValues ->
             NavHost(
                 navController = navController,
-                startDestination = if (isLoggedIn) "profile" else "authentication",
+                startDestination = startDestination,
                 modifier = modifier.padding(paddingValues)
             ) {
                 // Main screens
@@ -75,6 +81,7 @@ fun NavigationGraph(
 
                 // Profile screens
                 composable(Screen.ChangePassword.route) { ChangePasswordScreen(navController) }
+                composable(Screen.Onboarding.route) { OnboardingScreen(navController) }
             }
         }
     }

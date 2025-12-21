@@ -89,7 +89,6 @@ class SignUpViewModel @Inject constructor(
                 return@launch
             }
 
-
             _isLoading.value = true
 
             try {
@@ -116,7 +115,8 @@ class SignUpViewModel @Inject constructor(
                         _isLoading.value = false
                         onError("Registered successfully but automatic login failed. Please try logging in.")
                     }
-                } else {
+                }
+                else {
                     _isLoading.value = false
                     onError(
                         registerResult.exceptionOrNull()?.localizedMessage ?: "Registration failed"

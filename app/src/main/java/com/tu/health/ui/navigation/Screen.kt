@@ -10,4 +10,5 @@ sealed class Screen(val route: String) {
 
     // Profile Module
     object ChangePassword : Screen("change-password")
+    object Onboarding : Screen("onboarding")
 }

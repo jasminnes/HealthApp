@@ -235,7 +235,7 @@ fun SignUpScreen(
                         keyboardController?.hide()
                         viewModel.register(
                             onSuccess = {
-                                navController.navigate("profile") {
+                                navController.navigate("onboarding") {
                                     popUpTo("signup") { inclusive = true }
                                 }
                             },

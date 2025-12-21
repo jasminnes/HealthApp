@@ -86,12 +86,6 @@ class AuthRepository @Inject constructor(
             secureTokenStore.saveAccessToken(loginResponse.access)
             secureTokenStore.saveRefreshToken(loginResponse.refresh)
             profileDataStore.saveEmail(email)
-
-            val userResponse = api.get("Bearer ${loginResponse.access}")
-
-            profileDataStore.saveFirstName(userResponse.firstName)
-            profileDataStore.saveLastName(userResponse.lastName ?: "")
-
             Result.success(loginResponse)
         } catch (e: Exception) {
             Result.failure(e)
