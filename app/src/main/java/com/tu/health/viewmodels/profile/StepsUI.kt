@@ -8,3 +8,10 @@ enum class OnboardingStep {
     BODY_MEASUREMENTS,
     COMPLETE
 }
+
+
+enum class GoalsStep {
+    LIST,
+    DETAILS,
+    EDIT
+}

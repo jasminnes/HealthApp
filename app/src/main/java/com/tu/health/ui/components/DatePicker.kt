@@ -1,7 +1,6 @@
 package com.tu.health.ui.components
 
 import android.icu.text.SimpleDateFormat
-import android.icu.util.Calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,8 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,9 +28,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material3.DatePicker as M3DatePicker
+import androidx.compose.material3.DatePickerDialog as M3DatePickerDialog
 
 @Composable
-fun BirthDatePicker(
+fun DatePicker(
     selectedDate: String,
     displayText: String?,
     onClick: () -> Unit,
@@ -104,9 +103,8 @@ fun BirthDatePicker(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BirthDatePickerDialog(
+fun DatePickerDialog(
     show: Boolean,
-    displayText: String?,
     initialDateMillis: Long?,
     onDismiss: () -> Unit,
     onConfirm: (Long?) -> Unit
@@ -115,34 +113,27 @@ fun BirthDatePickerDialog(
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = initialDateMillis,
-        yearRange = 1900..Calendar.getInstance().get(Calendar.YEAR),
+        yearRange = 1920..2100,
         initialDisplayMode = DisplayMode.Picker
     )
 
-    DatePickerDialog(
+    M3DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(
-                onClick = { onConfirm(datePickerState.selectedDateMillis) }
-            ) {
-                Text(
-                    "OK",
-                    color = MaterialTheme.colorScheme.secondary
-                )
+            TextButton(onClick = { onConfirm(datePickerState.selectedDateMillis) }) {
+                Text("OK", color = MaterialTheme.colorScheme.secondary)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(
-                    "Cancel",
-                    color = MaterialTheme.colorScheme.secondary
-                )
+                Text("Cancel", color = MaterialTheme.colorScheme.secondary)
             }
         }
     ) {
-        DatePicker(
+        M3DatePicker(
             state = datePickerState,
-            title = { Text(displayText ?: "Select a date") }
+            title = null,
+            showModeToggle = false
         )
     }
 }

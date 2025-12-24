@@ -46,8 +46,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.tu.health.ui.components.BirthDatePicker
-import com.tu.health.ui.components.BirthDatePickerDialog
+import com.tu.health.ui.components.DatePicker
+import com.tu.health.ui.components.DatePickerDialog
 import com.tu.health.viewmodels.authentication.SignUpViewModel
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -212,7 +212,7 @@ fun SignUpScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Birth date picker
-                BirthDatePicker(
+                DatePicker(
                     selectedDate = birthDate,
                     displayText = "Select date of birth",
                     onClick = { showDatePicker = true },
@@ -276,9 +276,8 @@ fun SignUpScreen(
         }
 
         // Date Picker Dialog
-        BirthDatePickerDialog(
+        DatePickerDialog(
             show = showDatePicker,
-            displayText = "Select date of birth",
             initialDateMillis = getInitialDateMillis(birthDate),
             onDismiss = { showDatePicker = false },
             onConfirm = { selectedMillis ->

@@ -18,8 +18,9 @@ import com.tu.health.ui.screens.authentication.AuthenticationScreen
 import com.tu.health.ui.screens.authentication.LogInScreen
 import com.tu.health.ui.screens.authentication.SignUpScreen
 import com.tu.health.ui.screens.profile.ChangePasswordScreen
-import com.tu.health.ui.screens.profile.OnboardingScreen
+import com.tu.health.ui.screens.profile.onboarding.OnboardingScreen
 import com.tu.health.ui.screens.profile.ProfileScreen
+import com.tu.health.ui.screens.profile.goals.WeightGoalsScreen
 import com.tu.health.viewmodels.StartViewModel
 
 @Composable
@@ -82,6 +83,7 @@ fun NavigationGraph(
                 // Profile screens
                 composable(Screen.ChangePassword.route) { ChangePasswordScreen(navController) }
                 composable(Screen.Onboarding.route) { OnboardingScreen(navController) }
+                composable(Screen.Goals.route) { WeightGoalsScreen(navController) }
             }
         }
     }

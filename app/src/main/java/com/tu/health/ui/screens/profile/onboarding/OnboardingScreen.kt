@@ -1,4 +1,4 @@
-package com.tu.health.ui.screens.profile
+package com.tu.health.ui.screens.profile.onboarding
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -8,11 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.tu.health.ui.screens.profile.steps.ActivityLevelStep
-import com.tu.health.ui.screens.profile.steps.BodyMeasurementsStep
-import com.tu.health.ui.screens.profile.steps.ConditionsStep
-import com.tu.health.ui.screens.profile.steps.DietTypeStep
-import com.tu.health.ui.screens.profile.steps.HeightStep
 import com.tu.health.viewmodels.profile.OnboardingStep
 import com.tu.health.viewmodels.profile.OnboardingViewModel
 
