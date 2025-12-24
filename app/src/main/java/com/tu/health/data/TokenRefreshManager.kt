@@ -50,7 +50,7 @@ class TokenRefreshManager @Inject constructor(
                 if (parts.size != 3) return null
                 val payload = String(decode(parts[1], URL_SAFE))
                 JSONObject(payload).getLong("exp")
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }
