@@ -84,7 +84,7 @@ fun ProfileScreen(
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit Profile",
-                            tint = MaterialTheme.colorScheme.surfaceContainerHighest
+                            tint = MaterialTheme.colorScheme.surfaceDim
                         )
                     }
                 }

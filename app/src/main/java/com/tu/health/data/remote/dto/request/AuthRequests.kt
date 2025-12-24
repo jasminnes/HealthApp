@@ -25,3 +25,7 @@ data class ChangePasswordRequest(
 data class LogoutRequest(
     @Json(name = "refresh") val refreshToken: String,
 )
+
+data class RefreshTokenRequest(
+    @Json(name = "refresh") val refreshToken: String
+)

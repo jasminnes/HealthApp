@@ -3,10 +3,12 @@ package com.tu.health.data.remote
 import com.tu.health.data.remote.dto.request.ChangePasswordRequest
 import com.tu.health.data.remote.dto.request.LoginRequest
 import com.tu.health.data.remote.dto.request.LogoutRequest
+import com.tu.health.data.remote.dto.request.RefreshTokenRequest
 import com.tu.health.data.remote.dto.request.RegisterRequest
 import com.tu.health.data.remote.dto.response.DetailResponse
 import com.tu.health.data.remote.dto.response.GetResponse
 import com.tu.health.data.remote.dto.response.LoginResponse
+import com.tu.health.data.remote.dto.response.RefreshTokenResponse
 import com.tu.health.data.remote.dto.response.RegisterResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -37,6 +39,11 @@ interface AuthAPI {
     suspend fun get(
         @Header("Authorization") bearerToken: String
     ): GetResponse
+
+    @POST("/account/token/refresh/")
+    suspend fun refreshToken(
+        @Body request: RefreshTokenRequest
+    ): RefreshTokenResponse
 
     @POST("account/change-password/")
     suspend fun changePassword(

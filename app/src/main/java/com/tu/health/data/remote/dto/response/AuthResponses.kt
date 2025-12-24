@@ -28,3 +28,8 @@ data class GetResponse(
 data class DetailResponse(
     @Json(name = "detail") val detail: String,
 )
+
+data class RefreshTokenResponse(
+    @Json(name = "access") val accessToken: String,
+    @Json(name = "refresh") val refreshToken: String
+)

@@ -6,12 +6,14 @@ import com.tu.health.data.remote.AuthAPI
 import com.tu.health.data.remote.dto.request.ChangePasswordRequest
 import com.tu.health.data.remote.dto.request.LoginRequest
 import com.tu.health.data.remote.dto.request.LogoutRequest
+import com.tu.health.data.remote.dto.request.RefreshTokenRequest
 import com.tu.health.data.remote.dto.request.RegisterRequest
 import com.tu.health.data.remote.dto.response.DetailResponse
 import com.tu.health.data.remote.dto.response.GetResponse
 import com.tu.health.data.remote.dto.response.LoginResponse
 import com.tu.health.data.remote.dto.response.RegisterResponse
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import org.json.JSONObject
 import retrofit2.HttpException
 import javax.inject.Inject
@@ -104,6 +106,21 @@ class AuthRepository @Inject constructor(
             Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    suspend fun refreshAccessToken(): Boolean {
+        val refreshToken = secureTokenStore.refreshToken.firstOrNull() ?: return false
+        return try {
+            val response = api.refreshToken(
+                RefreshTokenRequest(refreshToken = refreshToken)
+            )
+            secureTokenStore.saveAccessToken(response.accessToken)
+            secureTokenStore.saveRefreshToken(response.refreshToken)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 
