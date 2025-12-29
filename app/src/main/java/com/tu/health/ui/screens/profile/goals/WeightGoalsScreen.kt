@@ -1,5 +1,7 @@
 package com.tu.health.ui.screens.profile.goals
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +21,7 @@ import com.tu.health.viewmodels.profile.WeightGoalViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeightGoalsScreen(
@@ -126,6 +129,7 @@ fun WeightGoalsScreen(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun GoalItem(goalName: String, finalDate: String, onClick: () -> Unit) {
     Card(
@@ -144,6 +148,7 @@ fun GoalItem(goalName: String, finalDate: String, onClick: () -> Unit) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun formatDate(date: String): String {
     return try {
         LocalDate.parse(date.take(10))

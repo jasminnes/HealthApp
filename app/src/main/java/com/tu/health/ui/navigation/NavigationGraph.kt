@@ -17,6 +17,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.tu.health.ui.screens.authentication.AuthenticationScreen
 import com.tu.health.ui.screens.authentication.LogInScreen
 import com.tu.health.ui.screens.authentication.SignUpScreen
+import com.tu.health.ui.screens.nutrition.DailyMacrosScreen
 import com.tu.health.ui.screens.profile.ChangePasswordScreen
 import com.tu.health.ui.screens.profile.onboarding.OnboardingScreen
 import com.tu.health.ui.screens.profile.ProfileScreen
@@ -84,6 +85,9 @@ fun NavigationGraph(
                 composable(Screen.ChangePassword.route) { ChangePasswordScreen(navController) }
                 composable(Screen.Onboarding.route) { OnboardingScreen(navController) }
                 composable(Screen.Goals.route) { WeightGoalsScreen(navController) }
+
+                // Navigation
+                composable(Screen.DailyMacros.route) { DailyMacrosScreen(navController) }
             }
         }
     }

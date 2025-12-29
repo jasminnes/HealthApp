@@ -4,6 +4,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.tu.health.data.remote.AuthAPI
 import com.tu.health.data.remote.GoalsAPI
+import com.tu.health.data.remote.NutritionAPI
 import com.tu.health.data.remote.ProfileAPI
 import dagger.Module
 import dagger.Provides
@@ -62,4 +63,9 @@ object NetworkModule {
     @Singleton
     fun provideGoalsAPI(retrofit: Retrofit): GoalsAPI =
         retrofit.create(GoalsAPI::class.java)
+
+    @Provides
+    @Singleton
+    fun provideNutritionAPI(retrofit: Retrofit): NutritionAPI =
+        retrofit.create(NutritionAPI::class.java)
 }
