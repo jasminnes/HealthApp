@@ -42,7 +42,7 @@ fun ConfirmationDialog(
             }
         },
         shape = MaterialTheme.shapes.extraLarge,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.background,
         tonalElevation = 6.dp
     )
 }

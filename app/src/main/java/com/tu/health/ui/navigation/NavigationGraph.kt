@@ -1,5 +1,7 @@
 package com.tu.health.ui.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -17,13 +19,15 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.tu.health.ui.screens.authentication.AuthenticationScreen
 import com.tu.health.ui.screens.authentication.LogInScreen
 import com.tu.health.ui.screens.authentication.SignUpScreen
-import com.tu.health.ui.screens.nutrition.DailyMacrosScreen
+import com.tu.health.ui.screens.nutrition.FoodDetailsScreen
+import com.tu.health.ui.screens.nutrition.MacrosScreen
 import com.tu.health.ui.screens.profile.ChangePasswordScreen
 import com.tu.health.ui.screens.profile.onboarding.OnboardingScreen
 import com.tu.health.ui.screens.profile.ProfileScreen
 import com.tu.health.ui.screens.profile.goals.WeightGoalsScreen
 import com.tu.health.viewmodels.StartViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NavigationGraph(
     modifier: Modifier = Modifier,
@@ -35,7 +39,7 @@ fun NavigationGraph(
 
     val startDestination = when {
         !isLoggedIn -> Screen.Authentication.route
-        else -> Screen.Profile.route
+        else -> Screen.Macros.route
     }
 
     if (!isLoading) {
@@ -87,7 +91,8 @@ fun NavigationGraph(
                 composable(Screen.Goals.route) { WeightGoalsScreen(navController) }
 
                 // Navigation
-                composable(Screen.DailyMacros.route) { DailyMacrosScreen(navController) }
+                composable(Screen.Macros.route) { MacrosScreen(navController) }
+                composable(Screen.FoodDetails.route) { FoodDetailsScreen(navController) }
             }
         }
     }

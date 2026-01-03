@@ -14,5 +14,6 @@ sealed class Screen(val route: String) {
     object Goals : Screen("goals")
 
     // Nutrition
-    object DailyMacros : Screen("daily-macros")
+    object Macros : Screen("macros")
+    object FoodDetails : Screen("food-details/{id}")
 }

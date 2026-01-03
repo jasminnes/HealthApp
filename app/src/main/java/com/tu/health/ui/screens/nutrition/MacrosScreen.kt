@@ -2,8 +2,11 @@ package com.tu.health.ui.screens.nutrition
 
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,31 +17,50 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
-import com.tu.health.viewmodels.nutrition.DailyMacrosViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
+import com.tu.health.data.remote.dto.TrackedFoodDTO
+import com.tu.health.viewmodels.nutrition.MacrosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DailyMacrosScreen(
+fun MacrosScreen(
     navController: NavController,
-    viewModel: DailyMacrosViewModel = hiltViewModel()
+    viewModel: MacrosViewModel = hiltViewModel(),
 ) {
-    val macros by viewModel.dailyMacros.collectAsState()
+    val dailyMacros by viewModel.dailySummary.collectAsState()
+    val trackedFoods by viewModel.trackedFoods.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-
+    val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
+
     LaunchedEffect(Unit) {
         viewModel.toastEvent.collectLatest { msg ->
             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
     }
 
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && dailyMacros == null) {
+                viewModel.getMacroPlan()
+                viewModel.getAllFood()
+            } else if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.getAllFood()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nutrition") },
+                title = { Text("Macros") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
@@ -49,32 +71,35 @@ fun DailyMacrosScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(start = 16.dp, top = 5.dp, end = 16.dp)
         ) {
             when {
-                isLoading && macros == null -> {
-                    LoadingState()
-                }
-                macros == null -> {
-                    EmptyState(onRetry = { viewModel.loadData() })
-                }
-                else -> {
-                    DailyMacrosContent(
-                        caloriesConsumed = macros!!.calories.toNumberOrZero(),
-                        caloriesTarget = macros!!.caloriesTarget.toNumberOrZero(),
-                        proteinConsumed = macros!!.proteinGrams.toNumberOrZero(),
-                        proteinTarget = macros!!.proteinTarget.toNumberOrZero(),
-                        carbsConsumed = macros!!.carbsGrams.toNumberOrZero(),
-                        carbsTarget = macros!!.carbsTarget.toNumberOrZero(),
-                        fatConsumed = macros!!.fatGrams.toNumberOrZero(),
-                        fatTarget = macros!!.fatTarget.toNumberOrZero(),
-                        isRefreshing = isLoading,
-                        onRetry = { viewModel.loadData() }
-                    )
-                }
+                isLoading && dailyMacros == null -> LoadingState()
+                dailyMacros == null -> EmptyState(onRetry = {
+                    viewModel.getMacroPlan()
+                    viewModel.getAllFood()
+                })
+                else -> DailyMacrosContent(
+                    caloriesConsumed = dailyMacros!!.caloriesConsumed,
+                    caloriesTarget = dailyMacros!!.caloriesTarget,
+                    proteinConsumed = dailyMacros!!.proteinConsumed,
+                    proteinTarget = dailyMacros!!.proteinTarget,
+                    carbsConsumed = dailyMacros!!.carbsConsumed,
+                    carbsTarget = dailyMacros!!.carbsTarget,
+                    fatConsumed = dailyMacros!!.fatConsumed,
+                    fatTarget = dailyMacros!!.fatTarget,
+                    trackedFoods = trackedFoods,
+                    isRefreshing = isLoading,
+                    onRetry = {
+                        viewModel.getMacroPlan()
+                        viewModel.getAllFood()
+                    },
+                    viewModel = viewModel,
+                    navController = navController
+                )
             }
 
-            if (isLoading && macros != null) {
+            if (isLoading && dailyMacros != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -100,11 +125,20 @@ private fun DailyMacrosContent(
     carbsTarget: Float,
     fatConsumed: Float,
     fatTarget: Float,
+    trackedFoods: List<TrackedFoodDTO>,
+    viewModel: MacrosViewModel,
+    navController: NavController,
     isRefreshing: Boolean,
     onRetry: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        CaloriesCard(
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+
+    CaloriesCard(
             consumed = caloriesConsumed,
             target = caloriesTarget,
         )
@@ -148,6 +182,8 @@ private fun DailyMacrosContent(
             carbsConsumed = carbsConsumed,
             carbsTarget = carbsTarget
         )
+
+        TrackedFoodsCard(foods = trackedFoods, viewModel = viewModel, navController = navController)
     }
 }
 
@@ -332,6 +368,88 @@ private fun TipsCard(
 }
 
 @Composable
+private fun TrackedFoodsCard(
+    foods: List<TrackedFoodDTO>,
+    modifier: Modifier = Modifier,
+    viewModel: MacrosViewModel,
+    navController: NavController
+) {
+    ElevatedCard(
+        shape = RoundedCornerShape(18.dp),
+        modifier = modifier.fillMaxWidth().padding(bottom = 15.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Column {
+                Text(
+                    text = "Today foods",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            if (foods.isEmpty()) {
+                Text(
+                    text = "No foods logged today.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    foods.forEach { f ->
+                        TrackedFoodRow(
+                            food = f,
+                            onClick = {
+                                viewModel.onSelectedIdChange(f.id)
+                                navController.navigate("food-details/${f.id}")
+                            }
+                        )
+
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrackedFoodRow(
+    food: TrackedFoodDTO,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = food.name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "${food.quantity.pretty1()} g",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Text(
+            text = "${food.calories.roundToInt()} kcal",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
 private fun LoadingState() {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -365,12 +483,7 @@ private fun EmptyState(onRetry: () -> Unit) {
     }
 }
 
-private fun String.toNumberOrZero(): Float {
-    val cleaned = trim().replace(",", ".")
-    return cleaned.toFloatOrNull() ?: 0f
-}
-
-private fun Float.pretty1(): String {
+fun Float.pretty1(): String {
     val rounded = (this * 10f).roundToInt() / 10f
     return if (rounded == rounded.roundToInt().toFloat()) {
         rounded.roundToInt().toString()
