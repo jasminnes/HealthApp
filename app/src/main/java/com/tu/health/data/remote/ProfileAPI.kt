@@ -74,18 +74,6 @@ interface ProfileAPI {
         @Body request: BodyMeasurementRequest
     ): BodyMeasurementDTO
 
-    @GET("/user/measurements/latest/")
-    suspend fun getLatestBodyMeasurement(
-        @Header("Authorization") bearerToken: String,
-    ): BodyMeasurementDTO
-
-    @PUT("/user/measurements/{id}/")
-    suspend fun updateBodyMeasurement(
-        @Header("Authorization") bearerToken: String,
-        @Path("id") id: Int,
-        @Body request: BodyMeasurementRequest
-    ): BodyMeasurementDTO
-
     @DELETE("/user/measurements/{id}/")
     suspend fun deleteBodyMeasurement(
         @Header("Authorization") bearerToken: String,

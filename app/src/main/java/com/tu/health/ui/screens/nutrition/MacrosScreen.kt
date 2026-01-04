@@ -50,9 +50,9 @@ fun MacrosScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME && dailyMacros == null) {
                 viewModel.getMacroPlan()
-                viewModel.getAllFood()
+                viewModel.getTodayFood()
             } else if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.getAllFood()
+                viewModel.getTodayFood()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -84,7 +84,7 @@ fun MacrosScreen(
                 isLoading && dailyMacros == null -> LoadingState()
                 dailyMacros == null -> EmptyState(onRetry = {
                     viewModel.getMacroPlan()
-                    viewModel.getAllFood()
+                    viewModel.getTodayFood()
                 })
                 else -> DailyMacrosContent(
                     caloriesConsumed = dailyMacros!!.caloriesConsumed,
@@ -99,7 +99,7 @@ fun MacrosScreen(
                     isRefreshing = isLoading,
                     onRetry = {
                         viewModel.getMacroPlan()
-                        viewModel.getAllFood()
+                        viewModel.getTodayFood()
                     },
                     viewModel = viewModel,
                     navController = navController

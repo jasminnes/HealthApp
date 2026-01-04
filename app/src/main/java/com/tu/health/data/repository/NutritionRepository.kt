@@ -39,9 +39,9 @@ class NutritionRepository @Inject constructor(
         }
     }
 
-    suspend fun getAllFood(): Result<List<TrackedFoodDTO>> {
+    suspend fun getTodayFood(): Result<List<TrackedFoodDTO>> {
         return try {
-            val response = api.getAllTrackedFood(
+            val response = api.getTodayTrackedFood(
                 "Bearer ${secureTokenStore.accessToken.first()}",
             )
             Result.success(response)

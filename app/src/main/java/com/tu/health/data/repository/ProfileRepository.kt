@@ -168,17 +168,6 @@ class ProfileRepository @Inject constructor(
         }
     }
 
-    suspend fun getLatestBodyMeasurement(): Result<BodyMeasurementDTO> {
-        return try {
-            val response = api.getLatestBodyMeasurement(
-                "Bearer ${secureTokenStore.accessToken.first()}"
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
     suspend fun createBodyMeasurement(
         weight: Float,
         neck: Float,
@@ -193,28 +182,6 @@ class ProfileRepository @Inject constructor(
 
             val response = api.createBodyMeasurement(
                 "Bearer ${secureTokenStore.accessToken.first()}", request
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun updateBodyMeasurement(
-        id: Int,
-        weight: Float,
-        neck: Float,
-        waist: Float
-    ): Result<BodyMeasurementDTO> {
-        return try {
-            val request = BodyMeasurementRequest(
-                weight = weight,
-                neck = neck,
-                waist = waist
-            )
-
-            val response = api.updateBodyMeasurement(
-                "Bearer ${secureTokenStore.accessToken.first()}", id, request
             )
             Result.success(response)
         } catch (e: Exception) {

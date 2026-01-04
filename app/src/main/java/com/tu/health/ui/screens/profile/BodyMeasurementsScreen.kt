@@ -1,0 +1,329 @@
+package com.tu.health.ui.screens.profile
+
+import android.widget.Toast
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.tu.health.data.remote.dto.BodyMeasurementDTO
+import com.tu.health.ui.components.ConfirmationDialog
+import com.tu.health.viewmodels.profile.BodyMeasurementsViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BodyMeasurementsScreen(
+    navController: NavController,
+    viewModel: BodyMeasurementsViewModel = hiltViewModel(),
+) {
+    val context = LocalContext.current
+
+    val measurements by viewModel.measurements.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    var createOpen by remember { mutableStateOf(false) }
+    var deleteConfirmFor by remember { mutableStateOf<BodyMeasurementDTO?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.getAllBodyMeasurements { ok, err ->
+            if (!ok) Toast.makeText(context, err ?: "Failed to load measurements",
+                Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Body measurements") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { createOpen = true }) {
+                        Icon(Icons.Default.Add, contentDescription = "Add")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            when {
+                isLoading && measurements.isEmpty() -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                measurements.isEmpty() -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "No measurements yet",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = "Tap + to add your first entry.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(
+                            items = measurements,
+                            key = { it.id }
+                        ) { m ->
+                            MeasurementRowCard(
+                                m = m,
+                                onDeleteClick = { deleteConfirmFor = m }
+                            )
+                        }
+
+                        item { Spacer(Modifier.height(6.dp)) }
+                    }
+                }
+            }
+
+            if (isLoading && measurements.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 8.dp)
+                ) {
+                    CircularProgressIndicator(
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+
+    if (createOpen) {
+        CreateMeasurementDialog(
+            onDismiss = { createOpen = false },
+            onSave = { w, waist, neck ->
+                viewModel.onWeightChange(w)
+                viewModel.onWaistChange(waist)
+                viewModel.onNeckChange(neck)
+
+                viewModel.createBodyMeasurement { ok, err ->
+                    if (ok) {
+                        Toast.makeText(context, "Measurement added",
+                            Toast.LENGTH_SHORT).show()
+                        viewModel.getAllBodyMeasurements { ok2, err2 ->
+                            if (!ok2) Toast.makeText(context, err2 ?: "Failed to refresh",
+                                Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(context, err ?: "Failed to add",
+                            Toast.LENGTH_SHORT).show()
+                    }
+                }
+                createOpen = false
+            }
+        )
+    }
+
+    deleteConfirmFor?.let { m ->
+        ConfirmationDialog(
+            title = "Delete measurement?",
+            message = "This cannot be undone",
+            onDismiss = { deleteConfirmFor = null },
+            onConfirm = {
+                viewModel.deleteBodyMeasurement(m.id) { ok, err ->
+                    if (ok) {
+                        Toast.makeText(context, "Deleted",
+                            Toast.LENGTH_SHORT).show()
+                        viewModel.getAllBodyMeasurements { ok2, err2 ->
+                            if (!ok2) Toast.makeText(context, err2 ?: "Failed to refresh",
+                                Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(context, err ?: "Delete failed",
+                            Toast.LENGTH_SHORT).show()
+                    }
+                }
+                deleteConfirmFor = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun MeasurementRowCard(
+    m: BodyMeasurementDTO,
+    onDeleteClick: () -> Unit
+) {
+    ElevatedCard(
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = formatDateForUi(m.createdAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Weight: ${m.weight} kg",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Waist: ${m.waist} cm • Neck: ${m.neck} cm",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(onClick = onDeleteClick) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreateMeasurementDialog(
+    onDismiss: () -> Unit,
+    onSave: (weight: Float, waist: Float, neck: Float) -> Unit,
+) {
+    var weightText by remember { mutableStateOf("") }
+    var waistText by remember { mutableStateOf("") }
+    var neckText by remember { mutableStateOf("") }
+
+    val w = weightText.toFloatOrNullSmart()
+    val wa = waistText.toFloatOrNullSmart()
+    val n = neckText.toFloatOrNullSmart()
+
+    val valid = (w != null && w > 0f && w <= 500f) &&
+            (wa != null && wa > 0f && wa <= 300f) &&
+            (n != null && n > 0f && n <= 100f)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add measurement") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = weightText,
+                    onValueChange = { weightText = it },
+                    label = { Text("Weight (kg)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+                OutlinedTextField(
+                    value = waistText,
+                    onValueChange = { waistText = it },
+                    label = { Text("Waist (cm)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+                OutlinedTextField(
+                    value = neckText,
+                    onValueChange = { neckText = it },
+                    label = { Text("Neck (cm)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+
+                if (!valid && (weightText.isNotBlank()
+                            || waistText.isNotBlank()
+                            || neckText.isNotBlank())) {
+                    Text(
+                        text = "Please enter valid numbers.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = valid,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                ),
+                onClick = { onSave(w!!, wa!!, n!!) }
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) { Text("Cancel") }
+        }
+    )
+}
+
+private fun String.toFloatOrNullSmart(): Float? =
+    trim().replace(",", ".").toFloatOrNull()
+
+private fun formatDateForUi(createdAt: String): String =
+    createdAt.replace("T", " ").take(16)

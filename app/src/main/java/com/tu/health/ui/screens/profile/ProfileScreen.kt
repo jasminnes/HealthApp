@@ -92,8 +92,8 @@ fun ProfileScreen(
                 Spacer(Modifier.height(40.dp))
 
                 // Options
-                ProfileOptionRow("Goals") {
-                    navController.navigate("goals")
+                ProfileOptionRow("Body Measurements") {
+                    navController.navigate("measurements")
                 }
 
                 ProfileOptionRow("Change Password") {

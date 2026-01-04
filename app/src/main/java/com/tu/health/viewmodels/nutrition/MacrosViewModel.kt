@@ -142,10 +142,10 @@ class MacrosViewModel @Inject constructor(
         }
     }
 
-    fun getAllFood() {
+    fun getTodayFood() {
         viewModelScope.launch {
             _isLoading.value = true
-            val result = nutritionRepository.getAllFood()
+            val result = nutritionRepository.getTodayFood()
 
             result.onSuccess {
                 _trackedFoods.value = it

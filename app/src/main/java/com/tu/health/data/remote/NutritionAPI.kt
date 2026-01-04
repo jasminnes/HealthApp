@@ -30,6 +30,11 @@ interface NutritionAPI {
         @Header("Authorization") bearerToken: String
     ) : List<TrackedFoodDTO>
 
+    @GET("/nutrition/track-food/today/")
+    suspend fun getTodayTrackedFood(
+        @Header("Authorization") bearerToken: String
+    ) : List<TrackedFoodDTO>
+
     @POST("/nutrition/track-food/")
     suspend fun createTrackedFood(
         @Header("Authorization") bearerToken: String,
