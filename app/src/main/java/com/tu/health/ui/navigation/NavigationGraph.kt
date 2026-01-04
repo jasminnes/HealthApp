@@ -20,6 +20,7 @@ import com.tu.health.ui.screens.authentication.AuthenticationScreen
 import com.tu.health.ui.screens.authentication.LogInScreen
 import com.tu.health.ui.screens.authentication.SignUpScreen
 import com.tu.health.ui.screens.nutrition.FoodDetailsScreen
+import com.tu.health.ui.screens.nutrition.FoodSearchScreen
 import com.tu.health.ui.screens.nutrition.MacrosScreen
 import com.tu.health.ui.screens.profile.ChangePasswordScreen
 import com.tu.health.ui.screens.profile.onboarding.OnboardingScreen
@@ -93,6 +94,7 @@ fun NavigationGraph(
                 // Navigation
                 composable(Screen.Macros.route) { MacrosScreen(navController) }
                 composable(Screen.FoodDetails.route) { FoodDetailsScreen(navController) }
+                composable(Screen.FoodSearch.route) { FoodSearchScreen(navController) }
             }
         }
     }

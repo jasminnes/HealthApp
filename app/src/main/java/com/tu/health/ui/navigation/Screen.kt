@@ -16,4 +16,5 @@ sealed class Screen(val route: String) {
     // Nutrition
     object Macros : Screen("macros")
     object FoodDetails : Screen("food-details/{id}")
+    object FoodSearch : Screen("food-search")
 }

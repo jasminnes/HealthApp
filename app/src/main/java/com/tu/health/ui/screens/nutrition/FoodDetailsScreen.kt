@@ -1,5 +1,6 @@
 package com.tu.health.ui.screens.nutrition
 
+import android.annotation.SuppressLint
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -8,7 +9,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -23,6 +24,7 @@ import com.tu.health.ui.components.ConfirmationDialog
 import com.tu.health.viewmodels.nutrition.MacrosViewModel
 import kotlin.math.roundToInt
 
+@SuppressLint("UnrememberedGetBackStackEntry")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FoodDetailsScreen(
@@ -49,7 +51,10 @@ fun FoodDetailsScreen(
                 title = { Text("Food details") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -75,7 +80,10 @@ fun FoodDetailsScreen(
                     )
                 }
                 else -> {
-                    ElevatedCard(shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+                    ElevatedCard(
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -87,12 +95,13 @@ fun FoodDetailsScreen(
                             )
 
                             Text(
-                                text = "${food.quantity.pretty1()} g • ${food.calories.roundToInt()} kcal",
+                                text = "${food.quantity.pretty1()} g " +
+                                        "• ${food.calories.roundToInt()} kcal",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            Divider()
+                            HorizontalDivider()
 
                             MacroLine("Protein", food.protein)
                             MacroLine("Carbs", food.carbs)
