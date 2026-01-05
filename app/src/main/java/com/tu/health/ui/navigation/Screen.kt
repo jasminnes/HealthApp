@@ -12,6 +12,8 @@ sealed class Screen(val route: String) {
     object ChangePassword : Screen("change-password")
     object Onboarding : Screen("onboarding")
     object BodyMeasurements : Screen("measurements")
+    object DietType : Screen("diet")
+    object HealthConditions : Screen("conditions")
 
     // Nutrition
     object Macros : Screen("macros")

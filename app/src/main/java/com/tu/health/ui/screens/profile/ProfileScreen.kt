@@ -38,6 +38,13 @@ fun ProfileScreen(
     val weightGoal by profileViewModel.weightGoal.collectAsState(initial = "")
     var showGoalDialog by remember { mutableStateOf(false) }
 
+    val activityLevel by profileViewModel.selectedActivityLevel.collectAsState(initial = null)
+    var showActivityDialog by remember { mutableStateOf(false) }
+
+    val height by profileViewModel.height.collectAsState(initial = 0f)
+    var showHeightDialog by remember { mutableStateOf(false) }
+
+
     val displayName by remember(firstName, lastName) {
         derivedStateOf {
             if (firstName.isNotBlank() || lastName.isNotBlank()) {
@@ -59,7 +66,6 @@ fun ProfileScreen(
                     .verticalScroll(rememberScrollState())
             ) {
 
-                // Profile Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -94,13 +100,28 @@ fun ProfileScreen(
 
                 Spacer(Modifier.height(40.dp))
 
-                // Options
+                ProfileOptionRow("Height") {
+                    showHeightDialog = true
+                }
+
                 ProfileOptionRow("Body Measurements") {
                     navController.navigate("measurements")
                 }
 
                 ProfileOptionRow("Weight Goal") {
                     showGoalDialog = true
+                }
+
+                ProfileOptionRow("Activity Level") {
+                    showActivityDialog = true
+                }
+
+                ProfileOptionRow("Diet Type") {
+                    navController.navigate("diet")
+                }
+
+                ProfileOptionRow("Health Conditions") {
+                    navController.navigate("conditions")
                 }
 
                 ProfileOptionRow("Change Password") {
@@ -132,7 +153,6 @@ fun ProfileScreen(
 
                 Spacer(Modifier.height(24.dp))
 
-                // Logout Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
@@ -172,6 +192,27 @@ fun ProfileScreen(
         )
     }
 
+    if (showActivityDialog) {
+        ActivityLevelDialog(
+            activityLevelName = activityLevel?.name,
+            activityLevelDescription = activityLevel?.description,
+            onDismiss = { showActivityDialog = false }
+        )
+    }
+
+    if (showHeightDialog) {
+        HeightDialog(
+            currentHeight = height,
+            onDismiss = { showHeightDialog = false },
+            onSave = { newHeight ->
+                profileViewModel.onHeightChange(newHeight)
+                profileViewModel.updateUserHeight { success, error ->
+                    if (!success) println("Height update failed: $error")
+                }
+                showHeightDialog = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -291,3 +332,119 @@ private fun WeightGoalDialog(
     )
 }
 
+@Composable
+private fun ActivityLevelDialog(
+    activityLevelName: String?,
+    activityLevelDescription: String?,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Activity level") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+
+                Text(
+                    text = activityLevelName?.takeIf { it.isNotBlank() } ?: "Not set",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+
+                if (!activityLevelDescription.isNullOrBlank()) {
+                    Text(
+                        text = activityLevelDescription,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            ) {
+                Text("OK")
+            }
+        }
+    )
+}
+
+@Composable
+private fun HeightDialog(
+    currentHeight: Float,
+    onDismiss: () -> Unit,
+    onSave: (Float) -> Unit
+) {
+    fun pretty(value: Float): String {
+        val rounded = (value * 10f).toInt() / 10f
+        return if (rounded == rounded.toInt().toFloat()) rounded.toInt().toString() else rounded.toString()
+    }
+
+    var text by remember {
+        mutableStateOf(
+            if (currentHeight > 0f) pretty(currentHeight) else ""
+        )
+    }
+
+    val parsed = text.replace(",", ".").toFloatOrNull()
+    val isValid = parsed != null && parsed in 50f..250f
+    val changed = isValid && kotlin.math.abs(parsed - currentHeight) > 0.0001f
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Height") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = if (currentHeight > 0f) "Current: ${pretty(currentHeight)} cm" else "Current: Not set",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text("Height (cm)") },
+                    singleLine = true,
+                    supportingText = {
+                        if (text.isNotBlank() && !isValid) {
+                            Text("Enter a valid height (50–250 cm)")
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = changed,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                ),
+                onClick = { onSave(parsed!!) }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
+}

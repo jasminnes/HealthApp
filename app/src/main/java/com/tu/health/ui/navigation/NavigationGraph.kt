@@ -26,6 +26,8 @@ import com.tu.health.ui.screens.profile.ChangePasswordScreen
 import com.tu.health.ui.screens.profile.onboarding.OnboardingScreen
 import com.tu.health.ui.screens.profile.ProfileScreen
 import com.tu.health.ui.screens.profile.BodyMeasurementsScreen
+import com.tu.health.ui.screens.profile.DietTypeScreen
+import com.tu.health.ui.screens.profile.HealthConditionsScreen
 import com.tu.health.viewmodels.StartViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -90,6 +92,8 @@ fun NavigationGraph(
                 composable(Screen.ChangePassword.route) { ChangePasswordScreen(navController) }
                 composable(Screen.Onboarding.route) { OnboardingScreen(navController) }
                 composable(Screen.BodyMeasurements.route) { BodyMeasurementsScreen(navController) }
+                composable(Screen.DietType.route) { DietTypeScreen(navController) }
+                composable(Screen.HealthConditions.route) { HealthConditionsScreen(navController) }
 
                 // Navigation
                 composable(Screen.Macros.route) { MacrosScreen(navController) }
