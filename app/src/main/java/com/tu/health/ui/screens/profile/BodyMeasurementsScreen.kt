@@ -21,6 +21,8 @@ import androidx.navigation.NavController
 import com.tu.health.data.remote.dto.BodyMeasurementDTO
 import com.tu.health.ui.components.ConfirmationDialog
 import com.tu.health.viewmodels.profile.BodyMeasurementsViewModel
+import com.tu.health.viewmodels.profile.ProfileUiEvent
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,18 +32,27 @@ fun BodyMeasurementsScreen(
 ) {
     val context = LocalContext.current
 
-    val measurements by viewModel.measurements.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val measurements = uiState.measurements
+    val isLoading = uiState.isLoading
 
     var createOpen by remember { mutableStateOf(false) }
     var deleteConfirmFor by remember { mutableStateOf<BodyMeasurementDTO?>(null) }
 
     LaunchedEffect(Unit) {
-        viewModel.getAllBodyMeasurements { ok, err ->
-            if (!ok) Toast.makeText(context, err ?: "Failed to load measurements",
-                Toast.LENGTH_SHORT).show()
+        viewModel.refreshMeasurements()
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is ProfileUiEvent.ShowMessage -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
+
 
     Scaffold(
         topBar = {
@@ -69,6 +80,7 @@ fun BodyMeasurementsScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
+
             when {
                 isLoading && measurements.isEmpty() -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -135,17 +147,9 @@ fun BodyMeasurementsScreen(
                 viewModel.onWaistChange(waist)
                 viewModel.onNeckChange(neck)
 
-                viewModel.createBodyMeasurement { ok, err ->
+                viewModel.createBodyMeasurement { ok ->
                     if (ok) {
-                        Toast.makeText(context, "Measurement added",
-                            Toast.LENGTH_SHORT).show()
-                        viewModel.getAllBodyMeasurements { ok2, err2 ->
-                            if (!ok2) Toast.makeText(context, err2 ?: "Failed to refresh",
-                                Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        Toast.makeText(context, err ?: "Failed to add",
-                            Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Measurement added", Toast.LENGTH_SHORT).show()
                     }
                 }
                 createOpen = false
@@ -159,17 +163,9 @@ fun BodyMeasurementsScreen(
             message = "This cannot be undone",
             onDismiss = { deleteConfirmFor = null },
             onConfirm = {
-                viewModel.deleteBodyMeasurement(m.id) { ok, err ->
+                viewModel.deleteBodyMeasurement(m.id) { ok ->
                     if (ok) {
-                        Toast.makeText(context, "Deleted",
-                            Toast.LENGTH_SHORT).show()
-                        viewModel.getAllBodyMeasurements { ok2, err2 ->
-                            if (!ok2) Toast.makeText(context, err2 ?: "Failed to refresh",
-                                Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        Toast.makeText(context, err ?: "Delete failed",
-                            Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
                     }
                 }
                 deleteConfirmFor = null
@@ -290,9 +286,7 @@ private fun CreateMeasurementDialog(
                     )
                 )
 
-                if (!valid && (weightText.isNotBlank()
-                            || waistText.isNotBlank()
-                            || neckText.isNotBlank())) {
+                if (!valid && (weightText.isNotBlank() || waistText.isNotBlank() || neckText.isNotBlank())) {
                     Text(
                         text = "Please enter valid numbers.",
                         color = MaterialTheme.colorScheme.error,

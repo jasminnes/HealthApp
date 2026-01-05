@@ -17,7 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.data.remote.dto.ConditionDTO
+import com.tu.health.viewmodels.profile.ProfileUiEvent
 import com.tu.health.viewmodels.profile.ProfileViewModel
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,19 +30,36 @@ fun HealthConditionsScreen(
     val context = LocalContext.current
     val snackBarHostState = remember { SnackbarHostState() }
 
-    val isLoading by viewModel.isLoading.collectAsState()
-    val allConditions by viewModel.allConditions.collectAsState()
-    val selectedIds by viewModel.selectedConditionIds.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+
+    val isLoading = uiState.isLoading
+    val allConditions = uiState.allConditions
+    val selectedIds = uiState.selectedConditionIds
 
     var initialSelected by remember { mutableStateOf<Set<Int>>(emptySet()) }
 
     LaunchedEffect(Unit) {
         viewModel.loadHealthConditions()
-        initialSelected = selectedIds
+    }
+
+    LaunchedEffect(allConditions) {
+        if (allConditions.isNotEmpty() && initialSelected.isEmpty()) {
+            initialSelected = selectedIds
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is ProfileUiEvent.ShowMessage -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     val hasChanges by remember(selectedIds, initialSelected) {
-        derivedStateOf { selectedIds != initialSelected }
+        derivedStateOf { initialSelected.isNotEmpty() && selectedIds != initialSelected }
     }
 
     Scaffold(
@@ -52,7 +71,8 @@ fun HealthConditionsScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back")
+                            contentDescription = "Back"
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -62,18 +82,13 @@ fun HealthConditionsScreen(
                     TextButton(
                         enabled = hasChanges && !isLoading,
                         onClick = {
-                            viewModel.updateUserConditions { success, error ->
+                            viewModel.updateUserConditions { success ->
                                 if (success) {
                                     initialSelected = selectedIds
-                                    Toast.makeText(context, "Saved",
-                                        Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
                                     navController.popBackStack()
                                 } else {
-                                    Toast.makeText(
-                                        context,
-                                        error ?: "Failed to save",
-                                        Toast.LENGTH_LONG
-                                    ).show()
+                                    Toast.makeText(context, "Failed to save", Toast.LENGTH_LONG).show()
                                 }
                             }
                         },
@@ -125,9 +140,9 @@ fun HealthConditionsScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(Modifier.height(10.dp))
-                        Button(
-                            onClick = { viewModel.loadHealthConditions() }
-                        ) { Text("Retry") }
+                        Button(onClick = { viewModel.loadHealthConditions() }) {
+                            Text("Retry")
+                        }
                     }
                 }
 
@@ -154,9 +169,7 @@ fun HealthConditionsScreen(
                                     ConditionRow(
                                         condition = condition,
                                         checked = selectedIds.contains(condition.id),
-                                        onToggle = {
-                                            viewModel.toggleCondition(condition.id)
-                                        }
+                                        onToggle = { viewModel.toggleCondition(condition.id) }
                                     )
                                 }
                             }

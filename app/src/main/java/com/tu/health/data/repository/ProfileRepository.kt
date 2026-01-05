@@ -1,37 +1,25 @@
 package com.tu.health.data.repository
 
-import com.tu.health.data.local.SecureTokenStore
-import com.tu.health.data.remote.ProfileAPI
+import com.tu.health.data.remote.api.ProfileAPI
 import com.tu.health.data.remote.dto.ActivityDTO
 import com.tu.health.data.remote.dto.BodyMeasurementDTO
 import com.tu.health.data.remote.dto.ConditionDTO
 import com.tu.health.data.remote.dto.DietTypeDTO
 import com.tu.health.data.remote.dto.ProfileDTO
-import com.tu.health.data.remote.dto.request.BodyMeasurementRequest
-import com.tu.health.data.remote.dto.request.OnboardingRequest
-import com.tu.health.data.remote.dto.request.UpdateUserActivityLevelRequest
-import com.tu.health.data.remote.dto.request.UpdateUserConditionsRequest
-import com.tu.health.data.remote.dto.request.UpdateUserDietTypeRequest
-import com.tu.health.data.remote.dto.request.UpdateUserHeightRequest
-import com.tu.health.data.remote.dto.request.UpdateUserWeightGoalRequest
-import kotlinx.coroutines.flow.first
+import com.tu.health.data.remote.request.BodyMeasurementRequest
+import com.tu.health.data.remote.request.OnboardingRequest
+import com.tu.health.data.remote.request.ProfileRequest
+import com.tu.health.data.remote.request.UpdateUserConditionsRequest
+import com.tu.health.data.remote.request.UpdateUserDietTypeRequest
+import com.tu.health.data.remote.request.UpdateUserHeightRequest
+import com.tu.health.data.remote.request.UpdateUserWeightGoalRequest
 import javax.inject.Inject
 
 class ProfileRepository @Inject constructor(
     private val api: ProfileAPI,
-    private val secureTokenStore: SecureTokenStore,
 ) {
-
-    suspend fun getProfile(): Result<ProfileDTO> {
-        return try {
-            val response = api.getProfile(
-                "Bearer ${secureTokenStore.accessToken.first()}"
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    suspend fun getProfile(): Result<ProfileDTO> =
+        safeCall { api.getProfile() }
 
     suspend fun updateProfile(
         height: Float,
@@ -40,188 +28,63 @@ class ProfileRepository @Inject constructor(
         conditions: List<Int>,
         weightGoal: String
     ): Result<ProfileDTO> {
-        return try {
-            val request = ProfileDTO(
-                height = height,
-                createdDate = "",
-                activityLevel = activityLevel,
-                dietType = dietType,
-                conditions = conditions,
-                weightGoal = weightGoal
-            )
-
-            val response = api.updateProfile(
-                "Bearer ${secureTokenStore.accessToken.first()}", request
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        val request = ProfileRequest(
+            height = height,
+            activityLevel = activityLevel,
+            dietType = dietType,
+            conditions = conditions,
+            weightGoal = weightGoal
+        )
+        return safeCall { api.updateProfile(request) }
     }
 
-    suspend fun updateUserHeight(
-        height: Float
-    ): Result<ProfileDTO> {
-        return try {
-            val request = UpdateUserHeightRequest(
-                height = height,
-            )
-
-            val response = api.updateUserHeight(
-                "Bearer ${secureTokenStore.accessToken.first()}", request
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    suspend fun updateUserHeight(height: Float): Result<ProfileDTO> {
+        val request = UpdateUserHeightRequest(height = height)
+        return safeCall { api.updateUserHeight(request) }
     }
 
-    suspend fun updateUserWeightGoal(
-        goal: String
-    ): Result<ProfileDTO> {
-        return try {
-            val request = UpdateUserWeightGoalRequest(
-                goal = goal
-            )
-
-            val response = api.updateUserWeightGoal(
-                "Bearer ${secureTokenStore.accessToken.first()}", request
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    suspend fun updateUserWeightGoal(goal: String): Result<ProfileDTO> {
+        val request = UpdateUserWeightGoalRequest(goal = goal)
+        return safeCall { api.updateUserWeightGoal(request) }
     }
 
-    suspend fun updateUserDietType(
-        dietType: Int?
-    ): Result<ProfileDTO> {
-        return try {
-            val request = UpdateUserDietTypeRequest(
-                dietType = dietType
-            )
-
-            val response = api.updateUserDietType(
-                "Bearer ${secureTokenStore.accessToken.first()}", request
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    suspend fun updateUserDietType(dietType: Int?): Result<ProfileDTO> {
+        val request = UpdateUserDietTypeRequest(dietType = dietType)
+        return safeCall { api.updateUserDietType(request) }
     }
 
-    suspend fun updateUserActivityLevel(
-        activityLevel: Int?
-    ): Result<ProfileDTO> {
-        return try {
-            val request = UpdateUserActivityLevelRequest(
-                activityLevel = activityLevel
-            )
-
-            val response = api.updateUserActivityLevel(
-                "Bearer ${secureTokenStore.accessToken.first()}", request
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    suspend fun updateUserConditions(conditions: List<Int>): Result<ProfileDTO> {
+        val request = UpdateUserConditionsRequest(conditions = conditions)
+        return safeCall { api.updateUserConditions(request) }
     }
 
-    suspend fun updateUserConditions(
-        conditions: List<Int>
-    ): Result<ProfileDTO> {
-        return try {
-            val request = UpdateUserConditionsRequest(
-                conditions = conditions
-            )
+    suspend fun getAllConditions(): Result<List<ConditionDTO>> =
+        safeCall { api.getAllConditions() }
 
-            val response = api.updateUserConditions(
-                "Bearer ${secureTokenStore.accessToken.first()}", request
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    suspend fun getAllDietTypes(): Result<List<DietTypeDTO>> =
+        safeCall { api.getAllDietTypes() }
 
-    suspend fun getAllConditions(): Result<List<ConditionDTO>> {
-        return try {
-            val response = api.getAllConditions(
-                "Bearer ${secureTokenStore.accessToken.first()}"
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    suspend fun getAllActivityLevels(): Result<List<ActivityDTO>> =
+        safeCall { api.getAllActivityLevels() }
 
-    suspend fun getAllDietTypes(): Result<List<DietTypeDTO>> {
-        return try {
-            val response = api.getAllDietTypes(
-                "Bearer ${secureTokenStore.accessToken.first()}"
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getAllActivityLevels(): Result<List<ActivityDTO>> {
-        return try {
-            val response = api.getAllActivityLevels(
-                "Bearer ${secureTokenStore.accessToken.first()}"
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getAllBodyMeasurements(): Result<List<BodyMeasurementDTO>> {
-        return try {
-            val response = api.getBodyMeasurementsAll(
-                "Bearer ${secureTokenStore.accessToken.first()}"
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    suspend fun getAllBodyMeasurements(): Result<List<BodyMeasurementDTO>> =
+        safeCall { api.getBodyMeasurementsAll() }
 
     suspend fun createBodyMeasurement(
         weight: Float,
         neck: Float,
         waist: Float
     ): Result<BodyMeasurementDTO> {
-        return try {
-            val request = BodyMeasurementRequest(
-                weight = weight,
-                neck = neck,
-                waist = waist
-            )
-
-            val response = api.createBodyMeasurement(
-                "Bearer ${secureTokenStore.accessToken.first()}", request
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        val request = BodyMeasurementRequest(
+            weight = weight,
+            neck = neck,
+            waist = waist
+        )
+        return safeCall { api.createBodyMeasurement(request) }
     }
 
-    suspend fun deleteBodyMeasurement(
-        id: Int
-    ): Result<Unit> {
-        return try {
-            api.deleteBodyMeasurement(
-                "Bearer ${secureTokenStore.accessToken.first()}",
-                id
-            )
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    suspend fun deleteBodyMeasurement(id: Int): Result<Unit> =
+        safeCallUnit { api.deleteBodyMeasurement(id) }
 
     suspend fun onboardUser(
         height: Float,
@@ -232,26 +95,17 @@ class ProfileRepository @Inject constructor(
         waist: Float,
         conditions: List<Int>
     ): Result<ProfileDTO> {
-        return try {
-            val request = OnboardingRequest(
-                height = height,
-                activityLevel = activityLevel,
-                dietType = dietType,
-                conditions = conditions,
-                bodyMeasurements = BodyMeasurementRequest(
-                    weight = weight,
-                    neck = neck,
-                    waist = waist
-                )
+        val request = OnboardingRequest(
+            height = height,
+            activityLevel = activityLevel,
+            dietType = dietType,
+            conditions = conditions,
+            bodyMeasurements = BodyMeasurementRequest(
+                weight = weight,
+                neck = neck,
+                waist = waist
             )
-
-            val response = api.onboardUser(
-                "Bearer ${secureTokenStore.accessToken.first()}",
-                request
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        )
+        return safeCall { api.onboardUser(request) }
     }
 }

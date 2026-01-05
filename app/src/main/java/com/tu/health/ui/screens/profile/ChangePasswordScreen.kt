@@ -27,7 +27,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,7 +41,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.R
 import com.tu.health.viewmodels.authentication.AuthViewModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun ChangePasswordScreen(
@@ -50,12 +48,13 @@ fun ChangePasswordScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val password by viewModel.password.collectAsState()
-    val newPassword by viewModel.newPassword.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+
+    val password = uiState.password
+    val newPassword = uiState.newPassword
+    val isLoading = uiState.isLoading
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackBarHostState) }
@@ -162,17 +161,9 @@ fun ChangePasswordScreen(
                     onClick = {
                         keyboardController?.hide()
 
-                        viewModel.changePassword { success, error ->
-                            if (success) {
-                                navController.navigate("profile") {
-                                    popUpTo("change-password") { inclusive = true }
-                                }
-                            } else {
-                                scope.launch {
-                                    snackBarHostState.showSnackbar(
-                                        error ?: "Failed to change password"
-                                    )
-                                }
+                        viewModel.changePassword {
+                            navController.navigate("profile") {
+                                popUpTo("change-password") { inclusive = true }
                             }
                         }
                     },
@@ -183,7 +174,6 @@ fun ChangePasswordScreen(
                 ) {
                     Text("Save", style = MaterialTheme.typography.bodyLarge)
                 }
-
             }
 
             // Loading overlay

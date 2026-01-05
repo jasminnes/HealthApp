@@ -1,4 +1,4 @@
-package com.tu.health.data.remote.dto.request
+package com.tu.health.data.remote.request
 
 import com.squareup.moshi.Json
 
@@ -9,6 +9,23 @@ data class OnboardingRequest(
     @Json(name = "diet_type") val dietType: Int,
     @Json(name = "body_measurements") val bodyMeasurements: BodyMeasurementRequest,
     @Json(name = "conditions") val conditions: List<Int>,
+)
+
+data class ProfileRequest(
+    @Json(name = "height")
+    val height: Float?,
+
+    @Json(name = "activity_level")
+    val activityLevel: Int,
+
+    @Json(name = "diet_type")
+    val dietType: Int,
+
+    @Json(name = "conditions")
+    val conditions: List<Int>,
+
+    @Json(name = "weight_goal")
+    val weightGoal: String
 )
 
 data class BodyMeasurementRequest(
@@ -27,10 +44,6 @@ data class UpdateUserWeightGoalRequest(
 
 data class UpdateUserDietTypeRequest(
     @Json(name = "diet_type") val dietType: Int?
-)
-
-data class UpdateUserActivityLevelRequest(
-    @Json(name = "activity_level") val activityLevel: Int?
 )
 
 data class UpdateUserConditionsRequest(

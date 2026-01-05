@@ -1,4 +1,4 @@
-package com.tu.health.data.remote.dto.request
+package com.tu.health.data.remote.request
 
 import com.squareup.moshi.Json
 

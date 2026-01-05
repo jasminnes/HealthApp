@@ -3,9 +3,9 @@ package com.tu.health.viewmodels.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tu.health.data.local.SecureTokenStore
-import com.tu.health.data.remote.dto.*
 import com.tu.health.data.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -13,121 +13,132 @@ import javax.inject.Inject
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
-    private val tokenStore: SecureTokenStore,
+    tokenStore: SecureTokenStore,
 ) : ViewModel() {
 
-    private val _step = MutableStateFlow(OnboardingStep.HEIGHT)
-    val step: StateFlow<OnboardingStep> = _step
+    private val _uiState = MutableStateFlow(OnboardingUiState())
+    val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    private val _height = MutableStateFlow(170f)
-    val height: StateFlow<Float> get() = _height
-
-    private val _weight = MutableStateFlow(70f)
-    val weight: StateFlow<Float> get() = _weight
-
-    private val _waist = MutableStateFlow(75f)
-    val waist: StateFlow<Float> get() = _waist
-
-    private val _neck = MutableStateFlow(34f)
-    val neck: StateFlow<Float> get() = _neck
-
-    private val _selectedDietTypeId = MutableStateFlow<Int?>(null)
-    val selectedDietTypeId: StateFlow<Int?> = _selectedDietTypeId
-
-    private val _selectedActivityLevelId = MutableStateFlow<Int?>(null)
-    val selectedActivityLevelId: StateFlow<Int?> = _selectedActivityLevelId
-
-    private val _selectedConditionIds = MutableStateFlow<Set<Int>>(emptySet())
-    val selectedConditionIds: StateFlow<Set<Int>> = _selectedConditionIds
-
-    private val _allDietTypes = MutableStateFlow<List<DietTypeDTO>>(emptyList())
-    val allDietTypes: StateFlow<List<DietTypeDTO>> = _allDietTypes
-
-    private val _allActivityLevels = MutableStateFlow<List<ActivityDTO>>(emptyList())
-    val allActivityLevels: StateFlow<List<ActivityDTO>> = _allActivityLevels
-
-    private val _allConditions = MutableStateFlow<List<ConditionDTO>>(emptyList())
-    val allConditions: StateFlow<List<ConditionDTO>> = _allConditions
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    private val _events = Channel<ProfileUiEvent>(Channel.BUFFERED)
+    val events: Flow<ProfileUiEvent> = _events.receiveAsFlow()
 
     init {
         viewModelScope.launch {
             tokenStore.accessToken.first { !it.isNullOrBlank() }
-            _isLoading.value = true
-
-            _allDietTypes.value =
-                profileRepository.getAllDietTypes().getOrNull().orEmpty()
-
-            _allActivityLevels.value =
-                profileRepository.getAllActivityLevels().getOrNull().orEmpty()
-
-            _allConditions.value =
-                profileRepository.getAllConditions().getOrNull().orEmpty()
-
-            _isLoading.value = false
+            preloadLists()
         }
     }
 
-    fun onHeightChange(value: Float) { _height.value = value }
-    fun onWeightChange(value: Float) { _weight.value = value }
-    fun onWaistChange(value: Float) { _waist.value = value }
-    fun onNeckChange(value: Float) { _neck.value = value }
+    private suspend fun preloadLists() {
+        setLoading(true)
 
-    fun onDietTypeSelected(id: Int) { _selectedDietTypeId.value = id }
-    fun onActivityLevelSelected(id: Int) { _selectedActivityLevelId.value = id }
+        val diets = profileRepository.getAllDietTypes().getOrNull().orEmpty()
+        val levels = profileRepository.getAllActivityLevels().getOrNull().orEmpty()
+        val conditions = profileRepository.getAllConditions().getOrNull().orEmpty()
+
+        _uiState.update {
+            it.copy(
+                allDietTypes = diets,
+                allActivityLevels = levels,
+                allConditions = conditions
+            )
+        }
+
+        setLoading(false)
+    }
+
+    fun onHeightChange(value: Float) = _uiState.update { it.copy(height = value) }
+    fun onWeightChange(value: Float) = _uiState.update { it.copy(weight = value) }
+    fun onWaistChange(value: Float) = _uiState.update { it.copy(waist = value) }
+    fun onNeckChange(value: Float) = _uiState.update { it.copy(neck = value) }
+
+    fun onDietTypeSelected(id: Int) = _uiState.update { it.copy(selectedDietTypeId = id) }
+    fun onActivityLevelSelected(id: Int) = _uiState.update { it.copy(selectedActivityLevelId = id) }
 
     fun toggleCondition(id: Int) {
-        _selectedConditionIds.update {
-            if (it.contains(id)) it - id else it + id
+        _uiState.update { state ->
+            val newSet =
+                if (state.selectedConditionIds.contains(id)) state.selectedConditionIds - id
+                else state.selectedConditionIds + id
+            state.copy(selectedConditionIds = newSet)
         }
     }
 
     fun nextStep() {
-        _step.value = when (_step.value) {
-            OnboardingStep.HEIGHT -> OnboardingStep.ACTIVITY_LEVEL
-            OnboardingStep.ACTIVITY_LEVEL -> OnboardingStep.DIET_TYPE
-            OnboardingStep.DIET_TYPE -> OnboardingStep.CONDITIONS
-            OnboardingStep.CONDITIONS -> OnboardingStep.BODY_MEASUREMENTS
-            OnboardingStep.BODY_MEASUREMENTS -> OnboardingStep.COMPLETE
-            OnboardingStep.COMPLETE -> OnboardingStep.COMPLETE
+        _uiState.update { state ->
+            val next = when (state.step) {
+                OnboardingStep.HEIGHT -> OnboardingStep.ACTIVITY_LEVEL
+                OnboardingStep.ACTIVITY_LEVEL -> OnboardingStep.DIET_TYPE
+                OnboardingStep.DIET_TYPE -> OnboardingStep.CONDITIONS
+                OnboardingStep.CONDITIONS -> OnboardingStep.BODY_MEASUREMENTS
+                OnboardingStep.BODY_MEASUREMENTS -> OnboardingStep.COMPLETE
+                OnboardingStep.COMPLETE -> OnboardingStep.COMPLETE
+            }
+            state.copy(step = next)
         }
     }
 
     fun previousStep() {
-        _step.value = when (_step.value) {
-            OnboardingStep.ACTIVITY_LEVEL -> OnboardingStep.HEIGHT
-            OnboardingStep.DIET_TYPE -> OnboardingStep.ACTIVITY_LEVEL
-            OnboardingStep.CONDITIONS -> OnboardingStep.DIET_TYPE
-            OnboardingStep.BODY_MEASUREMENTS -> OnboardingStep.CONDITIONS
-            else -> _step.value
+        _uiState.update { state ->
+            val prev = when (state.step) {
+                OnboardingStep.ACTIVITY_LEVEL -> OnboardingStep.HEIGHT
+                OnboardingStep.DIET_TYPE -> OnboardingStep.ACTIVITY_LEVEL
+                OnboardingStep.CONDITIONS -> OnboardingStep.DIET_TYPE
+                OnboardingStep.BODY_MEASUREMENTS -> OnboardingStep.CONDITIONS
+                else -> state.step
+            }
+            state.copy(step = prev)
         }
     }
 
-    fun onboardUser(onResult: (Boolean, String?) -> Unit) {
+    fun onboardUser(onResult: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                profileRepository.onboardUser(
-                    height = _height.value,
-                    activityLevel = _selectedActivityLevelId.value!!,
-                    dietType = _selectedDietTypeId.value!!,
-                    weight = _weight.value,
-                    waist = _waist.value,
-                    neck = _neck.value,
-                    conditions = _selectedConditionIds.value.toList()
-                )
-                onResult(true, null)
-            } catch (e: Exception) {
-                onResult(false, e.localizedMessage ?: "Onboarding failed")
-            } finally {
-                _isLoading.value = false
+            setLoading(true)
+
+            val s = uiState.value
+
+            if (s.height !in 50f..250f) {
+                emitMessage("Enter a valid height (50–250 cm)")
+                setLoading(false); onResult(false); return@launch
             }
+            if (s.selectedActivityLevelId == null) {
+                emitMessage("Please select activity level")
+                setLoading(false); onResult(false); return@launch
+            }
+            if (s.selectedDietTypeId == null) {
+                emitMessage("Please select diet type")
+                setLoading(false); onResult(false); return@launch
+            }
+
+            profileRepository.onboardUser(
+                height = s.height,
+                activityLevel = s.selectedActivityLevelId,
+                dietType = s.selectedDietTypeId,
+                weight = s.weight,
+                waist = s.waist,
+                neck = s.neck,
+                conditions = s.selectedConditionIds.toList()
+            ).onSuccess {
+                _uiState.update { it.copy(step = OnboardingStep.COMPLETE) }
+                onResult(true)
+            }.onFailure { e ->
+                emitMessage(e.localizedMessage ?: "Onboarding failed")
+                onResult(false)
+            }
+
+            setLoading(false)
         }
     }
 
     fun complete() {
-        _step.value = OnboardingStep.COMPLETE
+        _uiState.update { it.copy(step = OnboardingStep.COMPLETE) }
+    }
+
+    private fun setLoading(value: Boolean) {
+        _uiState.update { it.copy(isLoading = value) }
+    }
+
+    private suspend fun emitMessage(message: String) {
+        _events.send(ProfileUiEvent.ShowMessage(message))
     }
 }

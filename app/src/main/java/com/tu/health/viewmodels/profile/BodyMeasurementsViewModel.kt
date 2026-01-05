@@ -2,9 +2,9 @@ package com.tu.health.viewmodels.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tu.health.data.remote.dto.BodyMeasurementDTO
 import com.tu.health.data.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -14,67 +14,73 @@ class BodyMeasurementsViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
 ) : ViewModel() {
 
-    private val _selectedId = MutableStateFlow(0)
-    val selectedId: StateFlow<Int> get() = _selectedId
+    private val _uiState = MutableStateFlow(BodyMeasurementsUiState())
+    val uiState: StateFlow<BodyMeasurementsUiState> = _uiState.asStateFlow()
 
-    private val _measurements = MutableStateFlow<List<BodyMeasurementDTO>>(emptyList())
-    val measurements: StateFlow<List<BodyMeasurementDTO>> get() = _measurements
+    private val _events = Channel<ProfileUiEvent>(Channel.BUFFERED)
+    val events: Flow<ProfileUiEvent> = _events.receiveAsFlow()
 
-    private val _weight = MutableStateFlow(0f)
-    val weight: StateFlow<Float> get() = _weight
+    fun onWeightChange(value: Float) = _uiState.update { it.copy(weight = value) }
+    fun onWaistChange(value: Float) = _uiState.update { it.copy(waist = value) }
+    fun onNeckChange(value: Float) = _uiState.update { it.copy(neck = value) }
 
-    private val _waist = MutableStateFlow(0f)
-    val waist: StateFlow<Float> get() = _waist
-
-    private val _neck = MutableStateFlow(0f)
-    val neck: StateFlow<Float> get() = _neck
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> get() = _isLoading
-
-    fun onWeightChange(value: Float) { _weight.value = value }
-    fun onWaistChange(value: Float) { _waist.value = value }
-    fun onNeckChange(value: Float) { _neck.value = value }
-
-    fun getAllBodyMeasurements(onResult: (Boolean, String?) -> Unit) {
+    fun refreshMeasurements() {
         viewModelScope.launch {
-            _isLoading.value = true
+            setLoading(true)
+            profileRepository.getAllBodyMeasurements()
+                .onSuccess { list -> _uiState.update { it.copy(measurements = list) } }
+                .onFailure { e -> emitMessage(e.localizedMessage ?: "Failed to load measurements") }
+            setLoading(false)
+        }
+    }
 
-            val result = profileRepository.getAllBodyMeasurements()
-            result.onSuccess { list ->
-                _measurements.value = list
-                onResult(true, null)
-            }.onFailure {
-                onResult(false, it.localizedMessage)
+    fun createBodyMeasurement(onDone: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            setLoading(true)
+
+            val s = uiState.value
+            if (s.weight <= 0f) {
+                emitMessage("Enter weight")
+                setLoading(false); onDone(false); return@launch
             }
 
-            _isLoading.value = false
+            profileRepository.createBodyMeasurement(
+                weight = s.weight,
+                neck = s.neck,
+                waist = s.waist
+            ).onSuccess {
+                refreshMeasurements()
+                onDone(true)
+            }.onFailure { e ->
+                emitMessage(e.localizedMessage ?: "Failed to create measurement")
+                onDone(false)
+            }
+
+            setLoading(false)
         }
     }
 
-    fun createBodyMeasurement(onResult: (Boolean, String?) -> Unit) {
+    fun deleteBodyMeasurement(id: Int, onDone: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            _isLoading.value = true
-
-            val result = profileRepository.createBodyMeasurement(
-                weight = _weight.value,
-                neck = _neck.value,
-                waist = _waist.value
-            )
-            result.onSuccess { onResult(true, null) }
-                .onFailure { onResult(false, it.localizedMessage) }
-            _isLoading.value = false
+            setLoading(true)
+            profileRepository.deleteBodyMeasurement(id)
+                .onSuccess {
+                    _uiState.update { it.copy(measurements = it.measurements.filterNot { m -> m.id == id }) }
+                    onDone(true)
+                }
+                .onFailure { e ->
+                    emitMessage(e.localizedMessage ?: "Failed to delete measurement")
+                    onDone(false)
+                }
+            setLoading(false)
         }
     }
 
-    fun deleteBodyMeasurement(id: Int, onResult: (Boolean, String?) -> Unit) {
-        viewModelScope.launch {
-            _isLoading.value = true
+    private fun setLoading(value: Boolean) {
+        _uiState.update { it.copy(isLoading = value) }
+    }
 
-            val result = profileRepository.deleteBodyMeasurement(id = id)
-            result.onSuccess { onResult(true, null) }
-                .onFailure { onResult(false, it.localizedMessage) }
-            _isLoading.value = false
-        }
+    private suspend fun emitMessage(message: String) {
+        _events.send(ProfileUiEvent.ShowMessage(message))
     }
 }

@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
 import com.tu.health.data.remote.dto.TrackedFoodDTO
 import com.tu.health.viewmodels.nutrition.MacrosViewModel
+import com.tu.health.viewmodels.nutrition.NutritionUiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,24 +35,24 @@ fun MacrosScreen(
     navController: NavController,
     viewModel: MacrosViewModel = hiltViewModel(),
 ) {
-    val dailyMacros by viewModel.dailySummary.collectAsState()
-    val trackedFoods by viewModel.trackedFoods.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val state by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        viewModel.toastEvent.collectLatest { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is NutritionUiEvent.ShowMessage -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && dailyMacros == null) {
-                viewModel.getMacroPlan()
-                viewModel.getTodayFood()
-            } else if (event == Lifecycle.Event.ON_RESUME) {
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (state.macroPlan == null) viewModel.getMacroPlan()
                 viewModel.getTodayFood()
             }
         }
@@ -59,6 +60,11 @@ fun MacrosScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    val dailyMacros = state.dailySummary
+    val trackedFoods = state.trackedFoods
+    val isLoading = state.isLoading
+
+    // --- everything below stays the same UI ---
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,20 +93,15 @@ fun MacrosScreen(
                     viewModel.getTodayFood()
                 })
                 else -> DailyMacrosContent(
-                    caloriesConsumed = dailyMacros!!.caloriesConsumed,
-                    caloriesTarget = dailyMacros!!.caloriesTarget,
-                    proteinConsumed = dailyMacros!!.proteinConsumed,
-                    proteinTarget = dailyMacros!!.proteinTarget,
-                    carbsConsumed = dailyMacros!!.carbsConsumed,
-                    carbsTarget = dailyMacros!!.carbsTarget,
-                    fatConsumed = dailyMacros!!.fatConsumed,
-                    fatTarget = dailyMacros!!.fatTarget,
+                    caloriesConsumed = dailyMacros.caloriesConsumed,
+                    caloriesTarget = dailyMacros.caloriesTarget,
+                    proteinConsumed = dailyMacros.proteinConsumed,
+                    proteinTarget = dailyMacros.proteinTarget,
+                    carbsConsumed = dailyMacros.carbsConsumed,
+                    carbsTarget = dailyMacros.carbsTarget,
+                    fatConsumed = dailyMacros.fatConsumed,
+                    fatTarget = dailyMacros.fatTarget,
                     trackedFoods = trackedFoods,
-                    isRefreshing = isLoading,
-                    onRetry = {
-                        viewModel.getMacroPlan()
-                        viewModel.getTodayFood()
-                    },
                     viewModel = viewModel,
                     navController = navController
                 )
@@ -135,8 +136,6 @@ private fun DailyMacrosContent(
     trackedFoods: List<TrackedFoodDTO>,
     viewModel: MacrosViewModel,
     navController: NavController,
-    isRefreshing: Boolean,
-    onRetry: () -> Unit
 ) {
     Column(
         modifier = Modifier

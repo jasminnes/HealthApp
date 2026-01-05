@@ -20,6 +20,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.data.remote.dto.DietTypeDTO
 import com.tu.health.viewmodels.profile.ProfileViewModel
+import com.tu.health.viewmodels.profile.ProfileUiEvent
+import kotlinx.coroutines.flow.collectLatest
 
 @SuppressLint("UnrememberedGetBackStackEntry")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,20 +32,34 @@ fun DietTypeScreen(
     val parentEntry = remember(navController) { navController.getBackStackEntry("profile") }
     val profileViewModel: ProfileViewModel = hiltViewModel(parentEntry)
 
-    val allDietTypes by profileViewModel.allDietTypes.collectAsState()
+    val uiState by profileViewModel.uiState.collectAsState()
     val selectedDietType by profileViewModel.selectedDietType.collectAsState()
-    val selectedDietTypeId by profileViewModel.selectedDietTypeId.collectAsState()
-    val isLoading by profileViewModel.isLoading.collectAsState()
 
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        if (allDietTypes.isEmpty()) {
+        profileViewModel.events.collectLatest { event ->
+            when (event) {
+                is ProfileUiEvent.ShowMessage -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(uiState.allDietTypes.size) {
+        if (uiState.allDietTypes.isEmpty()) {
             profileViewModel.loadDiets()
         }
     }
 
-    var pendingId by remember(selectedDietTypeId) { mutableStateOf(selectedDietTypeId) }
+    var pendingId by remember(uiState.selectedDietTypeId) {
+        mutableStateOf(uiState.selectedDietTypeId)
+    }
+
+    val isLoading = uiState.isLoading
+    val allDietTypes = uiState.allDietTypes
+    val selectedDietTypeId = uiState.selectedDietTypeId
 
     val saveEnabled = pendingId != null && pendingId != selectedDietTypeId
 
@@ -53,9 +69,7 @@ fun DietTypeScreen(
                 title = { Text("Diet type") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -63,15 +77,10 @@ fun DietTypeScreen(
                         enabled = saveEnabled && !isLoading,
                         onClick = {
                             pendingId?.let { profileViewModel.onDietTypeSelected(it) }
-                            profileViewModel.updateUserDietType { success, error ->
+
+                            profileViewModel.updateUserDietType { success ->
                                 if (success) {
                                     navController.popBackStack()
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        error ?: "Failed to update diet type",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
                                 }
                             }
                         },
@@ -91,7 +100,8 @@ fun DietTypeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp).padding(bottom = 20.dp)
+                .padding(16.dp)
+                .padding(bottom = 20.dp)
         ) {
             when {
                 isLoading && allDietTypes.isEmpty() -> {
@@ -116,7 +126,7 @@ fun DietTypeScreen(
                         CurrentDietCard(selectedDietType)
 
                         Text(
-                            text = "Choose a diet type",
+                            text = "Change your diet type",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -150,7 +160,10 @@ fun DietTypeScreen(
 
 @Composable
 private fun CurrentDietCard(selectedDietType: DietTypeDTO?) {
-    ElevatedCard(shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+    ElevatedCard(
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -195,7 +208,7 @@ private fun DietTypeItem(
             RadioButton(
                 selected = selected,
                 onClick = onClick,
-                colors = RadioButtonColors(
+                colors = RadioButtonDefaults.colors(
                     selectedColor = MaterialTheme.colorScheme.tertiary,
                     unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     disabledSelectedColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -205,13 +218,14 @@ private fun DietTypeItem(
 
             Spacer(Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 Text(
                     text = diet.name,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f)
+                    fontWeight = FontWeight.SemiBold
                 )
 
                 Text(

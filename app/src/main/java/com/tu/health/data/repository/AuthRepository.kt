@@ -2,18 +2,15 @@ package com.tu.health.data.repository
 
 import com.tu.health.data.local.ProfileDataStore
 import com.tu.health.data.local.SecureTokenStore
-import com.tu.health.data.remote.AuthAPI
-import com.tu.health.data.remote.dto.request.ChangePasswordRequest
-import com.tu.health.data.remote.dto.request.LoginRequest
-import com.tu.health.data.remote.dto.request.LogoutRequest
-import com.tu.health.data.remote.dto.request.RefreshTokenRequest
-import com.tu.health.data.remote.dto.request.RegisterRequest
-import com.tu.health.data.remote.dto.response.DetailResponse
-import com.tu.health.data.remote.dto.response.GetResponse
-import com.tu.health.data.remote.dto.response.LoginResponse
-import com.tu.health.data.remote.dto.response.RegisterResponse
+import com.tu.health.data.remote.api.AuthAPI
+import com.tu.health.data.remote.dto.AccountDTO
+import com.tu.health.data.remote.dto.DetailDTO
+import com.tu.health.data.remote.dto.TokensDTO
+import com.tu.health.data.remote.request.ChangePasswordRequest
+import com.tu.health.data.remote.request.LoginRequest
+import com.tu.health.data.remote.request.LogoutRequest
+import com.tu.health.data.remote.request.RegisterRequest
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import org.json.JSONObject
 import retrofit2.HttpException
 import javax.inject.Inject
@@ -23,7 +20,6 @@ class AuthRepository @Inject constructor(
     private val secureTokenStore: SecureTokenStore,
     private val profileDataStore: ProfileDataStore
 ) {
-    val accessTokenFlow = secureTokenStore.accessToken
     val refreshTokenFlow = secureTokenStore.refreshToken
 
     suspend fun registerUser(
@@ -34,7 +30,7 @@ class AuthRepository @Inject constructor(
         lastName: String?,
         gender: String,
         birthDate: String
-    ): Result<RegisterResponse> {
+    ): Result<AccountDTO> {
         return try {
             val request = RegisterRequest(
                 email = email,
@@ -57,14 +53,9 @@ class AuthRepository @Inject constructor(
 
             val rawMessage = try {
                 val json = JSONObject(errorBody ?: "{}")
-
                 when {
-                    json.has("email") ->
-                        json.getJSONArray("email").getString(0)
-
-                    json.has("password") ->
-                        json.getJSONArray("password").getString(0)
-
+                    json.has("email") -> json.getJSONArray("email").getString(0)
+                    json.has("password") -> json.getJSONArray("password").getString(0)
                     else -> "Registration failed"
                 }
             } catch (_: Exception) {
@@ -81,91 +72,50 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun loginUser(email: String, password: String): Result<LoginResponse> {
-        return try {
+    suspend fun loginUser(email: String, password: String): Result<TokensDTO> =
+        safeCall {
             val loginResponse = api.login(LoginRequest(email, password))
-
-            secureTokenStore.saveAccessToken(loginResponse.access)
-            secureTokenStore.saveRefreshToken(loginResponse.refresh)
+            secureTokenStore.saveAccessToken(loginResponse.accessToken)
+            secureTokenStore.saveRefreshToken(loginResponse.refreshToken)
             profileDataStore.saveEmail(email)
-            Result.success(loginResponse)
-        } catch (e: Exception) {
-            Result.failure(e)
+            loginResponse
         }
-    }
 
-
-    suspend fun logout(): Result<DetailResponse> {
-        return try {
+    suspend fun logout(): Result<DetailDTO> =
+        safeCall {
             val request = LogoutRequest(refreshToken = refreshTokenFlow.first() ?: "")
-            val response = api.logout("Bearer ${accessTokenFlow.first()}", request)
+            val response = api.logout(request)
 
             profileDataStore.clear()
             secureTokenStore.clear()
 
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
+            response
         }
-    }
 
-    suspend fun refreshAccessToken(): Boolean {
-        val refreshToken = secureTokenStore.refreshToken.firstOrNull() ?: return false
-        return try {
-            val response = api.refreshToken(
-                RefreshTokenRequest(refreshToken = refreshToken)
-            )
-            secureTokenStore.saveAccessToken(response.accessToken)
-            secureTokenStore.saveRefreshToken(response.refreshToken)
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
-
-    suspend fun getUser(): Result<GetResponse> {
-        return try {
-            val response = api.get("Bearer ${accessTokenFlow.first()}")
-
+    suspend fun getUser(): Result<AccountDTO> =
+        safeCall {
+            val response = api.get()
             profileDataStore.saveFirstName(response.firstName)
             profileDataStore.saveLastName(response.lastName ?: "")
-
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
+            response
         }
-    }
 
-    suspend fun changePassword(
-        oldPassword: String,
-        newPassword: String
-    ): Result<DetailResponse> {
-        return try {
+    suspend fun changePassword(oldPassword: String, newPassword: String): Result<DetailDTO> =
+        safeCall {
             val request = ChangePasswordRequest(
                 oldPassword = oldPassword,
                 newPassword = newPassword
             )
-            val response = api.changePassword(
-                "Bearer ${accessTokenFlow.first()}", request
-            )
-
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
+            api.changePassword(request)
         }
-    }
 
-    suspend fun delete(): Result<DetailResponse> {
-        return try {
-            val response = api.delete("Bearer ${accessTokenFlow.first()}")
+    suspend fun delete(): Result<DetailDTO> =
+        safeCall {
+            val response = api.delete()
 
             profileDataStore.clear()
             secureTokenStore.clear()
 
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
+            response
         }
-    }
 }

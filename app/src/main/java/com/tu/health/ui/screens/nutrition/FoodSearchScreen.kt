@@ -20,6 +20,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.data.remote.dto.SearchedFoodDTO
 import com.tu.health.viewmodels.nutrition.MacrosViewModel
+import com.tu.health.viewmodels.nutrition.NutritionUiEvent
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
 
@@ -29,21 +30,24 @@ import kotlin.math.roundToInt
 fun FoodSearchScreen(
     navController: NavController
 ) {
-    // IMPORTANT: share the SAME viewmodel instance as MacrosScreen
     val parentEntry = remember(navController) { navController.getBackStackEntry("macros") }
     val viewModel: MacrosViewModel = hiltViewModel(parentEntry)
 
+    val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    val searched by viewModel.searched.collectAsState()
-    val results by viewModel.results.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-
     LaunchedEffect(Unit) {
-        viewModel.toastEvent.collectLatest { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is NutritionUiEvent.ShowMessage ->
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+            }
         }
     }
+
+    val searched = state.searchQuery
+    val results = state.searchResults
+    val isLoading = state.isLoading
 
     Scaffold(
         topBar = {
@@ -66,7 +70,7 @@ fun FoodSearchScreen(
         ) {
             OutlinedTextField(
                 value = searched,
-                onValueChange = { viewModel.onSearchedChange(it) },
+                onValueChange = viewModel::onSearchQueryChange,
                 label = { Text("Search food") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -88,10 +92,7 @@ fun FoodSearchScreen(
             }
 
             if (results.isEmpty() && searched.isNotBlank() && !isLoading) {
-                Text(
-                    "No results.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text("No results.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             LazyColumn(
@@ -102,16 +103,14 @@ fun FoodSearchScreen(
                     SearchResultRow(
                         item = item,
                         onClick = {
-                            viewModel.onSelectedNameChange(item.name)
+                            viewModel.onNameChange(item.name)
                             viewModel.onQuantityChange(100f)
-
                             viewModel.onCaloriesChange(item.calories)
                             viewModel.onProteinChange(item.protein)
                             viewModel.onCarbsChange(item.carbs)
                             viewModel.onFatChange(item.fat)
 
                             viewModel.createFood()
-
                             navController.popBackStack()
                         }
                     )

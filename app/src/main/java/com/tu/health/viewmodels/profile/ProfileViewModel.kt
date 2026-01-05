@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tu.health.data.local.ProfileDataStore
 import com.tu.health.data.repository.ProfileRepository
-import com.tu.health.data.remote.dto.*
+import com.tu.health.data.remote.dto.ActivityDTO
+import com.tu.health.data.remote.dto.DietTypeDTO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -13,166 +15,200 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
-    private val profileDataStore: ProfileDataStore
+    profileDataStore: ProfileDataStore
 ) : ViewModel() {
 
     val firstName: StateFlow<String> = profileDataStore.profileFlow
         .map { it.firstName }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
     val lastName: StateFlow<String> = profileDataStore.profileFlow
         .map { it.lastName }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
     val email: StateFlow<String> = profileDataStore.profileFlow
         .map { it.email }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
-    private val _height = MutableStateFlow(0f)
-    val height: StateFlow<Float> get() = _height
+    private val _uiState = MutableStateFlow(ProfileUiState())
+    val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    private val _weightGoal = MutableStateFlow("")
-    val weightGoal: StateFlow<String> get() = _weightGoal
+    private val _events = Channel<ProfileUiEvent>(Channel.BUFFERED)
+    val events: Flow<ProfileUiEvent> = _events.receiveAsFlow()
 
-    private val _selectedDietTypeId = MutableStateFlow<Int?>(null)
-    val selectedDietTypeId: StateFlow<Int?> get() = _selectedDietTypeId
+    val selectedDietType: StateFlow<DietTypeDTO?> =
+        uiState.map { state ->
+            state.allDietTypes.firstOrNull { it.id == state.selectedDietTypeId }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    private val _selectedActivityLevelId = MutableStateFlow<Int?>(null)
-
-    private val _selectedConditionIds = MutableStateFlow<Set<Int>>(emptySet())
-    val selectedConditionIds: StateFlow<Set<Int>> get() = _selectedConditionIds
-
-    private val _allDietTypes = MutableStateFlow<List<DietTypeDTO>>(emptyList())
-    val allDietTypes: StateFlow<List<DietTypeDTO>> get() = _allDietTypes
-
-    private val _allActivityLevels = MutableStateFlow<List<ActivityDTO>>(emptyList())
-
-    private val _allConditions = MutableStateFlow<List<ConditionDTO>>(emptyList())
-    val allConditions: StateFlow<List<ConditionDTO>> get() = _allConditions
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> get() = _isLoading
-
-    val selectedDietType: StateFlow<DietTypeDTO?> = combine(
-        _allDietTypes, _selectedDietTypeId
-    ) { diets, selectedId ->
-        diets.firstOrNull { it.id == selectedId }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
-
-    val selectedActivityLevel: StateFlow<ActivityDTO?> = combine(
-        _allActivityLevels, _selectedActivityLevelId
-    ) { levels, selectedId ->
-        levels.firstOrNull { it.id == selectedId }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
-
-    fun onHeightChange(value: Float) { _height.value = value }
-    fun onWeightGoalChange(value: String) {_weightGoal.value = value}
-    fun onDietTypeSelected(id: Int) { _selectedDietTypeId.value = id }
-
-    fun toggleCondition(conditionId: Int) {
-        _selectedConditionIds.update { current ->
-            if (current.contains(conditionId)) current - conditionId else current + conditionId
-        }
-    }
+    val selectedActivityLevel: StateFlow<ActivityDTO?> =
+        uiState.map { state ->
+            state.allActivityLevels.firstOrNull { it.id == state.selectedActivityLevelId }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
-        loadProfile()
+        refreshProfile()
         loadActivityLevels()
     }
 
-    fun loadProfile() {
+    fun onHeightChange(value: Float) {
+        _uiState.update { it.copy(height = value) }
+    }
+
+    fun onWeightGoalChange(value: String) {
+        _uiState.update { it.copy(weightGoal = value) }
+    }
+
+    fun onDietTypeSelected(id: Int) {
+        _uiState.update { it.copy(selectedDietTypeId = id) }
+    }
+
+    fun toggleCondition(conditionId: Int) {
+        _uiState.update { state ->
+            val newSet =
+                if (state.selectedConditionIds.contains(conditionId))
+                    state.selectedConditionIds - conditionId
+                else
+                    state.selectedConditionIds + conditionId
+
+            state.copy(selectedConditionIds = newSet)
+        }
+    }
+
+    fun refreshProfile() {
         viewModelScope.launch {
-            _isLoading.value = true
-
-            profileRepository.getProfile().onSuccess { profile ->
-                _height.value = profile.height!!
-                _weightGoal.value = profile.weightGoal
-                _selectedDietTypeId.value = profile.dietType
-                _selectedActivityLevelId.value = profile.activityLevel
-                _selectedConditionIds.value = profile.conditions.toSet()
-            }
-
-            _isLoading.value = false
+            setLoading(true)
+            profileRepository.getProfile()
+                .onSuccess { profile ->
+                    _uiState.update {
+                        it.copy(
+                            height = profile.height ?: 0f,
+                            weightGoal = profile.weightGoal,
+                            selectedDietTypeId = profile.dietType,
+                            selectedActivityLevelId = profile.activityLevel,
+                            selectedConditionIds = profile.conditions.toSet(),
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    emitMessage(e.localizedMessage ?: "Failed to load profile")
+                }
+            setLoading(false)
         }
     }
 
     fun loadDiets() {
         viewModelScope.launch {
-            _isLoading.value = true
-            profileRepository.getAllDietTypes().onSuccess { _allDietTypes.value = it }
-            _isLoading.value = false
+            setLoading(true)
+            profileRepository.getAllDietTypes()
+                .onSuccess { list -> _uiState.update { it.copy(allDietTypes = list) } }
+                .onFailure { e -> emitMessage(e.localizedMessage ?: "Failed to load diet types") }
+            setLoading(false)
         }
     }
 
     fun loadHealthConditions() {
         viewModelScope.launch {
-            _isLoading.value = true
-            profileRepository.getAllConditions().onSuccess { _allConditions.value = it }
-            _isLoading.value = false
+            setLoading(true)
+            profileRepository.getAllConditions()
+                .onSuccess { list -> _uiState.update { it.copy(allConditions = list) } }
+                .onFailure { e -> emitMessage(e.localizedMessage ?: "Failed to load conditions") }
+            setLoading(false)
         }
     }
 
     fun loadActivityLevels() {
         viewModelScope.launch {
-            _isLoading.value = true
-            profileRepository.getAllActivityLevels().onSuccess { _allActivityLevels.value = it }
-            _isLoading.value = false
+            setLoading(true)
+            profileRepository.getAllActivityLevels()
+                .onSuccess { list -> _uiState.update { it.copy(allActivityLevels = list) } }
+                .onFailure { e -> emitMessage(e.localizedMessage ?: "Failed to load activity levels") }
+            setLoading(false)
         }
     }
 
-    fun updateUserWeightGoal(onResult: (Boolean, String?) -> Unit) {
+    fun updateUserWeightGoal(onResult: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            _isLoading.value = true
+            setLoading(true)
+            val goal = uiState.value.weightGoal.trim()
+            if (goal.isBlank()) {
+                emitMessage("Please choose a weight goal")
+                setLoading(false)
+                onResult(false)
+                return@launch
+            }
 
-            val result = profileRepository.updateUserWeightGoal(
-                goal = _weightGoal.value
-            )
-
-            result.onSuccess { onResult(true, null) }
-                .onFailure { onResult(false, it.localizedMessage) }
-            _isLoading.value = false
+            profileRepository.updateUserWeightGoal(goal)
+                .onSuccess { onResult(true) }
+                .onFailure { e ->
+                    emitMessage(e.localizedMessage ?: "Failed to update weight goal")
+                    onResult(false)
+                }
+            setLoading(false)
         }
     }
 
-    fun updateUserHeight(onResult: (Boolean, String?) -> Unit) {
+    fun updateUserHeight(onResult: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            _isLoading.value = true
+            setLoading(true)
+            val h = uiState.value.height
+            if (h !in 50f..250f) {
+                emitMessage("Enter a valid height (50–250 cm)")
+                setLoading(false)
+                onResult(false)
+                return@launch
+            }
 
-            val result = profileRepository.updateUserHeight(
-                height = _height.value
-            )
-
-            result.onSuccess { onResult(true, null) }
-                .onFailure { onResult(false, it.localizedMessage) }
-            _isLoading.value = false
+            profileRepository.updateUserHeight(h)
+                .onSuccess { onResult(true) }
+                .onFailure { e ->
+                    emitMessage(e.localizedMessage ?: "Failed to update height")
+                    onResult(false)
+                }
+            setLoading(false)
         }
     }
 
-    fun updateUserDietType(onResult: (Boolean, String?) -> Unit) {
+    fun updateUserDietType(onResult: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            _isLoading.value = true
+            setLoading(true)
+            val id = uiState.value.selectedDietTypeId
+            if (id == null) {
+                emitMessage("Please select a diet type")
+                setLoading(false)
+                onResult(false)
+                return@launch
+            }
 
-            val result = profileRepository.updateUserDietType(
-                dietType = _selectedDietTypeId.value
-            )
-
-            result.onSuccess { onResult(true, null) }
-                .onFailure { onResult(false, it.localizedMessage) }
-            _isLoading.value = false
+            profileRepository.updateUserDietType(id)
+                .onSuccess { onResult(true) }
+                .onFailure { e ->
+                    emitMessage(e.localizedMessage ?: "Failed to update diet type")
+                    onResult(false)
+                }
+            setLoading(false)
         }
     }
 
-    fun updateUserConditions(onResult: (Boolean, String?) -> Unit) {
+    fun updateUserConditions(onResult: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            _isLoading.value = true
-
-            val result = profileRepository.updateUserConditions(
-                conditions = _selectedConditionIds.value.toList()
-            )
-
-            result.onSuccess { onResult(true, null) }
-                .onFailure { onResult(false, it.localizedMessage) }
-            _isLoading.value = false
+            setLoading(true)
+            val conditions = uiState.value.selectedConditionIds.toList()
+            profileRepository.updateUserConditions(conditions)
+                .onSuccess { onResult(true) }
+                .onFailure { e ->
+                    emitMessage(e.localizedMessage ?: "Failed to update conditions")
+                    onResult(false)
+                }
+            setLoading(false)
         }
+    }
+
+    private fun setLoading(value: Boolean) {
+        _uiState.update { it.copy(isLoading = value) }
+    }
+
+    private suspend fun emitMessage(message: String) {
+        _events.send(ProfileUiEvent.ShowMessage(message))
     }
 }

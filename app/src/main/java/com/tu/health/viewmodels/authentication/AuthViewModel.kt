@@ -4,143 +4,132 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tu.health.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import javax.inject.Inject
-
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _email = MutableStateFlow("")
-    val email: StateFlow<String> get() = _email
+    private val _uiState = MutableStateFlow(AuthUiState())
+    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
-    private val _password = MutableStateFlow("")
-    val password: StateFlow<String> get() = _password
+    private val _events = Channel<AuthUiEvent>(Channel.BUFFERED)
+    val events: Flow<AuthUiEvent> = _events.receiveAsFlow()
 
-    private val _newPassword = MutableStateFlow("")
-    val newPassword: StateFlow<String> get() = _newPassword
+    fun onEmailChange(value: String) = _uiState.update { it.copy(email = value) }
+    fun onPasswordChange(value: String) = _uiState.update { it.copy(password = value) }
+    fun onNewPasswordChange(value: String) = _uiState.update { it.copy(newPassword = value) }
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> get() = _isLoading
-
-    fun onEmailChange(newEmail: String) { _email.value = newEmail }
-    fun onPasswordChange(password: String) { _password.value = password }
-    fun onNewPasswordChange(newPassword: String) { _newPassword.value = newPassword }
-
-    fun login(
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    ) {
-
+    fun login(onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
+            val email = uiState.value.email.trim()
+            val password = uiState.value.password
 
-            _isLoading.value = true
+            if (email.isBlank() || password.isBlank()) {
+                emitMessage("Please enter email and password")
+                return@launch
+            }
 
-            val result = authRepository.loginUser(
-                email = email.value,
-                password = password.value
-            )
+            setLoading(true)
 
-            _isLoading.value = false
+            val result = authRepository.loginUser(email = email, password = password)
+
+            setLoading(false)
 
             result.onSuccess {
                 onSuccess()
             }.onFailure { e ->
-                val rawMessage = try {
-                    if (e is retrofit2.HttpException) {
-                        e.response()?.errorBody()?.string() ?: e.localizedMessage ?: "Unknown error"
-                    } else {
-                        e.localizedMessage ?: "Unknown error"
-                    }
-                } catch (_: Exception) {
-                    e.localizedMessage ?: "Unknown error"
+                emitMessage(mapLoginError(e))
+            }
+        }
+    }
+
+    fun logout(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            setLoading(true)
+            authRepository.logout()
+            _uiState.value = AuthUiState()
+            onComplete()
+        }
+    }
+
+    fun getUser() {
+        viewModelScope.launch {
+            setLoading(true)
+            authRepository.getUser()
+                .onFailure { emitMessage(it.localizedMessage ?: "Failed to load user") }
+            setLoading(false)
+        }
+    }
+
+    fun changePassword(onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            val oldPass = uiState.value.password
+            val newPass = uiState.value.newPassword
+
+            if (oldPass.isBlank() || newPass.isBlank()) {
+                emitMessage("Please fill both password fields")
+                return@launch
+            }
+
+            setLoading(true)
+            authRepository.changePassword(oldPassword = oldPass, newPassword = newPass)
+                .onSuccess {
+                    emitMessage("Password changed")
+                    onDone()
                 }
+                .onFailure { emitMessage(it.localizedMessage ?: "Failed to change password") }
+            setLoading(false)
+        }
+    }
 
-                val customMessage = when {
-                    rawMessage.contains("no active account", ignoreCase = true) ->
-                        "No active account found with these credentials."
-
-                    rawMessage.contains("invalid", ignoreCase = true) ||
-                            rawMessage.contains("credentials", ignoreCase = true) ->
-                        "Invalid email or password. Please try again."
-
-                    rawMessage.contains("email", ignoreCase = true) ->
-                        "Please enter a valid email address."
-
-                    rawMessage.contains("password", ignoreCase = true) ->
-                        "Incorrect password. Please try again."
-
-                    rawMessage.contains("timeout", ignoreCase = true) ->
-                        "Server timeout. Please try again later."
-
-                    rawMessage.contains("failed to connect", ignoreCase = true) ->
-                        "Unable to reach the server. Please check your internet connection."
-
-                    rawMessage.contains("400", ignoreCase = true) ->
-                        "Invalid login details. Please review your inputs."
-
-                    rawMessage.contains("401", ignoreCase = true) ->
-                        "Unauthorized access. Please check your credentials."
-
-                    else ->
-                        "Login failed. Please verify your information and try again."
+    fun deleteUser(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            setLoading(true)
+            authRepository.delete()
+                .onSuccess {
+                    _uiState.value = AuthUiState()
+                    emitMessage("Account deleted")
+                    onSuccess()
                 }
-                onError(customMessage)
+                .onFailure { emitMessage(it.localizedMessage ?: "Failed to delete account") }
+            setLoading(false)
+        }
+    }
+
+    private fun setLoading(value: Boolean) = _uiState.update { it.copy(isLoading = value) }
+
+    private suspend fun emitMessage(message: String) {
+        _events.send(AuthUiEvent.ShowMessage(message))
+    }
+
+    private fun mapLoginError(e: Throwable): String {
+        val raw = try {
+            if (e is HttpException) {
+                e.response()?.errorBody()?.string() ?: e.localizedMessage ?: "Unknown error"
+            } else {
+                e.localizedMessage ?: "Unknown error"
             }
+        } catch (_: Exception) {
+            e.localizedMessage ?: "Unknown error"
         }
-    }
 
-    fun logout(
-        onComplete: () -> Unit = {}
-    ) {
-        viewModelScope.launch {
-            try {
-                authRepository.logout()
-            } catch (_: Exception) {
-            } finally {
-                _email.value = ""
-                _password.value = ""
-                _isLoading.value = false
-
-                onComplete()
-            }
-        }
-    }
-
-    fun get(onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
-        viewModelScope.launch {
-            val result = authRepository.getUser()
-            result.onSuccess {
-                onResult(true, null)
-            }.onFailure {
-                onResult(false, it.localizedMessage)
-            }
-        }
-    }
-
-    fun changePassword(onResult: (Boolean, String?) -> Unit) {
-        viewModelScope.launch {
-            val result = authRepository.changePassword(
-                oldPassword = password.value,
-                newPassword = newPassword.value
-            )
-            result.onSuccess { onResult(true, null) }
-                .onFailure { onResult(false, it.localizedMessage) }
-        }
-    }
-
-    fun deleteUser(onResult: (Boolean, String?) -> Unit) {
-        viewModelScope.launch {
-            val result = authRepository.delete()
-            result.onSuccess {
-                _email.value = ""
-                _password.value = ""
-                onResult(true, null)
-            }.onFailure { onResult(false, it.localizedMessage) }
+        return when {
+            raw.contains("no active account", ignoreCase = true) ->
+                "No active account found with these credentials."
+            raw.contains("invalid", ignoreCase = true) || raw.contains("credentials", ignoreCase = true) ->
+                "Invalid email or password. Please try again."
+            raw.contains("timeout", ignoreCase = true) ->
+                "Server timeout. Please try again later."
+            raw.contains("failed to connect", ignoreCase = true) ->
+                "Unable to reach the server. Please check your internet connection."
+            else ->
+                "Login failed. Please verify your information and try again."
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.tu.health.ui.screens.profile
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,17 +11,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.ui.components.ConfirmationDialog
 import com.tu.health.viewmodels.authentication.AuthViewModel
+import com.tu.health.viewmodels.profile.ProfileUiEvent
 import com.tu.health.viewmodels.profile.ProfileViewModel
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun ProfileScreen(
@@ -31,19 +34,30 @@ fun ProfileScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     val snackBarHostState = remember { SnackbarHostState() }
 
+    val context = LocalContext.current
+
     val email by profileViewModel.email.collectAsState(initial = "")
     val firstName by profileViewModel.firstName.collectAsState(initial = "")
     val lastName by profileViewModel.lastName.collectAsState(initial = "")
 
-    val weightGoal by profileViewModel.weightGoal.collectAsState(initial = "")
-    var showGoalDialog by remember { mutableStateOf(false) }
-
+    val uiState by profileViewModel.uiState.collectAsState()
     val activityLevel by profileViewModel.selectedActivityLevel.collectAsState(initial = null)
-    var showActivityDialog by remember { mutableStateOf(false) }
 
-    val height by profileViewModel.height.collectAsState(initial = 0f)
+    val weightGoal = uiState.weightGoal
+    val height = uiState.height
+
+    var showGoalDialog by remember { mutableStateOf(false) }
+    var showActivityDialog by remember { mutableStateOf(false) }
     var showHeightDialog by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        profileViewModel.events.collectLatest { event ->
+            when (event) {
+                is ProfileUiEvent.ShowMessage ->
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     val displayName by remember(firstName, lastName) {
         derivedStateOf {
@@ -100,34 +114,13 @@ fun ProfileScreen(
 
                 Spacer(Modifier.height(40.dp))
 
-                ProfileOptionRow("Height") {
-                    showHeightDialog = true
-                }
-
-                ProfileOptionRow("Body Measurements") {
-                    navController.navigate("measurements")
-                }
-
-                ProfileOptionRow("Weight Goal") {
-                    showGoalDialog = true
-                }
-
-                ProfileOptionRow("Activity Level") {
-                    showActivityDialog = true
-                }
-
-                ProfileOptionRow("Diet Type") {
-                    navController.navigate("diet")
-                }
-
-                ProfileOptionRow("Health Conditions") {
-                    navController.navigate("conditions")
-                }
-
-                ProfileOptionRow("Change Password") {
-                    navController.navigate("change-password")
-                }
-
+                ProfileOptionRow("Height") { showHeightDialog = true }
+                ProfileOptionRow("Body Measurements") { navController.navigate("measurements") }
+                ProfileOptionRow("Weight Goal") { showGoalDialog = true }
+                ProfileOptionRow("Activity Level") { showActivityDialog = true }
+                ProfileOptionRow("Diet Type") { navController.navigate("diet") }
+                ProfileOptionRow("Health Conditions") { navController.navigate("conditions") }
+                ProfileOptionRow("Change Password") { navController.navigate("change-password") }
                 ProfileOptionRow("Delete Account") { showDeleteDialog = true }
 
                 if (showDeleteDialog) {
@@ -136,14 +129,9 @@ fun ProfileScreen(
                         message = "Are you sure you want to permanently delete your account? This action cannot be undone.",
                         confirmText = "Delete",
                         onConfirm = {
-                            showDeleteDialog = false
-                            authViewModel.deleteUser { success, errorMessage ->
-                                if (success) {
-                                    navController.navigate("authentication") {
-                                        popUpTo("profile") { inclusive = true }
-                                    }
-                                } else {
-                                    println("Delete failed: $errorMessage")
+                            authViewModel.deleteUser {
+                                navController.navigate("authentication") {
+                                    popUpTo("profile") { inclusive = true }
                                 }
                             }
                         },
@@ -182,12 +170,9 @@ fun ProfileScreen(
             onDismiss = { showGoalDialog = false },
             onSave = { newGoal ->
                 profileViewModel.onWeightGoalChange(newGoal)
-                profileViewModel.updateUserWeightGoal { success, error ->
-                    if (!success) {
-                        println("Goal update failed: $error")
-                    }
+                profileViewModel.updateUserWeightGoal { success ->
+                    if (success) showGoalDialog = false
                 }
-                showGoalDialog = false
             }
         )
     }
@@ -206,10 +191,9 @@ fun ProfileScreen(
             onDismiss = { showHeightDialog = false },
             onSave = { newHeight ->
                 profileViewModel.onHeightChange(newHeight)
-                profileViewModel.updateUserHeight { success, error ->
-                    if (!success) println("Height update failed: $error")
+                profileViewModel.updateUserHeight { success ->
+                    if (success) showHeightDialog = false
                 }
-                showHeightDialog = false
             }
         )
     }
@@ -234,7 +218,6 @@ private fun ProfileOptionRow(text: String, onClick: () -> Unit) {
             )
         }
         HorizontalDivider(
-            modifier = Modifier,
             thickness = DividerDefaults.Thickness,
             color = MaterialTheme.colorScheme.surfaceVariant
         )

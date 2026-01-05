@@ -2,9 +2,10 @@ package com.tu.health.di
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import com.tu.health.data.remote.AuthAPI
-import com.tu.health.data.remote.NutritionAPI
-import com.tu.health.data.remote.ProfileAPI
+import com.tu.health.data.remote.api.AuthAPI
+import com.tu.health.data.remote.api.NutritionAPI
+import com.tu.health.data.remote.api.ProfileAPI
+import com.tu.health.data.remote.interceptor.AuthInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,11 +23,14 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(
+        authInterceptor: AuthInterceptor
     ): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
+
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
             .addInterceptor(logging)
             .build()
     }

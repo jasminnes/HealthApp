@@ -1,51 +1,23 @@
 package com.tu.health.ui.screens.authentication
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.R
 import com.tu.health.ui.navigation.Screen
+import com.tu.health.viewmodels.authentication.AuthUiEvent
 import com.tu.health.viewmodels.authentication.AuthViewModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun LogInScreen(
@@ -53,12 +25,17 @@ fun LogInScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val email by viewModel.email.collectAsState()
-    val password by viewModel.password.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is AuthUiEvent.ShowMessage -> snackBarHostState.showSnackbar(event.message)
+            }
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackBarHostState) }
@@ -84,9 +61,8 @@ fun LogInScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                // Email
                 OutlinedTextField(
-                    value = email,
+                    value = state.email,
                     onValueChange = viewModel::onEmailChange,
                     label = { Text("Email") },
                     singleLine = true,
@@ -106,10 +82,9 @@ fun LogInScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Password
                 var passwordVisible by remember { mutableStateOf(false) }
                 OutlinedTextField(
-                    value = password,
+                    value = state.password,
                     onValueChange = viewModel::onPasswordChange,
                     label = { Text("Password") },
                     singleLine = true,
@@ -144,7 +119,6 @@ fun LogInScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Login button
                 Button(
                     onClick = {
                         keyboardController?.hide()
@@ -152,11 +126,6 @@ fun LogInScreen(
                             onSuccess = {
                                 navController.navigate("profile") {
                                     popUpTo("login") { inclusive = true }
-                                }
-                            },
-                            onError = { message ->
-                                scope.launch {
-                                    snackBarHostState.showSnackbar(message)
                                 }
                             }
                         )
@@ -171,7 +140,6 @@ fun LogInScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Navigate to signup
                 TextButton(onClick = { navController.navigate(Screen.SignUp.route) }) {
                     Text(
                         text = "Don’t have an account? Sign up",
@@ -182,8 +150,7 @@ fun LogInScreen(
                 }
             }
 
-            // Loading overlay
-            if (isLoading) {
+            if (state.isLoading) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

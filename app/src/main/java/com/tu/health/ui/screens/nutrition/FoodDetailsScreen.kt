@@ -37,8 +37,10 @@ fun FoodDetailsScreen(
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val id = backStackEntry?.arguments?.getString("id")?.toIntOrNull() ?: 0
-    val trackedFoods by viewModel.trackedFoods.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+    val trackedFoods = state.trackedFoods
+    val isLoading = state.isLoading
+
 
     var editOpen by remember { mutableStateOf(false) }
     var deleteOpen by remember { mutableStateOf(false) }

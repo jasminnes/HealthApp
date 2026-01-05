@@ -3,37 +3,12 @@ package com.tu.health.ui.screens.authentication
 import android.icu.text.SimpleDateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +23,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.ui.components.DatePicker
 import com.tu.health.ui.components.DatePickerDialog
+import com.tu.health.viewmodels.authentication.AuthUiEvent
 import com.tu.health.viewmodels.authentication.SignUpViewModel
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -61,19 +37,18 @@ fun SignUpScreen(
 ) {
     val scrollState = rememberScrollState()
     val snackBarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // Collect state from ViewModel
-    val email by viewModel.email.collectAsState()
-    val password by viewModel.password.collectAsState()
-    val repeatPassword by viewModel.repeatPassword.collectAsState()
-    val firstName by viewModel.firstName.collectAsState()
-    val lastName by viewModel.lastName.collectAsState()
-    val gender by viewModel.gender.collectAsState()
-    val birthDate by viewModel.birthDate.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is AuthUiEvent.ShowMessage -> snackBarHostState.showSnackbar(event.message)
+            }
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackBarHostState) }
@@ -99,9 +74,8 @@ fun SignUpScreen(
                     textAlign = TextAlign.Center
                 )
 
-                // Email
                 OutlinedTextField(
-                    value = email,
+                    value = state.email,
                     onValueChange = viewModel::onEmailChange,
                     label = { Text("Email") },
                     singleLine = true,
@@ -121,9 +95,8 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Password
                 OutlinedTextField(
-                    value = password,
+                    value = state.password,
                     onValueChange = viewModel::onPasswordChange,
                     label = { Text("Password") },
                     singleLine = true,
@@ -144,9 +117,8 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Repeat password
                 OutlinedTextField(
-                    value = repeatPassword,
+                    value = state.repeatPassword,
                     onValueChange = viewModel::onRepeatPasswordChange,
                     label = { Text("Repeat Password") },
                     singleLine = true,
@@ -167,9 +139,8 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // First name
                 OutlinedTextField(
-                    value = firstName,
+                    value = state.firstName,
                     onValueChange = viewModel::onFirstNameChange,
                     label = { Text("First name") },
                     singleLine = true,
@@ -189,9 +160,8 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Last name
                 OutlinedTextField(
-                    value = lastName ?: "",
+                    value = state.lastName,
                     onValueChange = viewModel::onLastNameChange,
                     label = { Text("Last name (optional)") },
                     singleLine = true,
@@ -211,9 +181,8 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Birth date picker
                 DatePicker(
-                    selectedDate = birthDate,
+                    selectedDate = state.birthDate,
                     displayText = "Select date of birth",
                     onClick = { showDatePicker = true },
                     modifier = Modifier.fillMaxWidth()
@@ -221,15 +190,13 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Select gender
                 GenderSelector(
-                    selected = gender,
+                    selected = state.gender,
                     onSelect = viewModel::onGenderChange
                 )
 
                 Spacer(modifier = Modifier.height(44.dp))
 
-                // Sign up button
                 Button(
                     onClick = {
                         keyboardController?.hide()
@@ -237,11 +204,6 @@ fun SignUpScreen(
                             onSuccess = {
                                 navController.navigate("onboarding") {
                                     popUpTo("signup") { inclusive = true }
-                                }
-                            },
-                            onError = { message ->
-                                scope.launch {
-                                    snackBarHostState.showSnackbar(message)
                                 }
                             }
                         )
@@ -262,8 +224,7 @@ fun SignUpScreen(
                 }
             }
 
-            // Loading overlay
-            if (isLoading) {
+            if (state.isLoading) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -275,16 +236,14 @@ fun SignUpScreen(
             }
         }
 
-        // Date Picker Dialog
         DatePickerDialog(
             show = showDatePicker,
-            initialDateMillis = getInitialDateMillis(birthDate),
+            initialDateMillis = getInitialDateMillis(state.birthDate),
             onDismiss = { showDatePicker = false },
             onConfirm = { selectedMillis ->
                 selectedMillis?.let {
                     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                    val dateString = sdf.format(it)
-                    viewModel.onBirthDateChange(dateString)
+                    viewModel.onBirthDateChange(sdf.format(it))
                 }
                 showDatePicker = false
             }
