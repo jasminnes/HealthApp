@@ -21,6 +21,10 @@ data class UpdateUserHeightRequest(
     @Json(name = "height") val height: Float
 )
 
+data class UpdateUserWeightGoalRequest(
+    @Json(name = "weight_goal") val goal: String
+)
+
 data class UpdateUserDietTypeRequest(
     @Json(name = "diet_type") val dietType: Int?
 )

@@ -11,6 +11,7 @@ import com.tu.health.data.remote.dto.request.UpdateUserActivityLevelRequest
 import com.tu.health.data.remote.dto.request.UpdateUserConditionsRequest
 import com.tu.health.data.remote.dto.request.UpdateUserDietTypeRequest
 import com.tu.health.data.remote.dto.request.UpdateUserHeightRequest
+import com.tu.health.data.remote.dto.request.UpdateUserWeightGoalRequest
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -33,31 +34,37 @@ interface ProfileAPI {
         @Header("Authorization") bearerToken: String
     ): ProfileDTO
 
-    @PUT("user/profile")
+    @PUT("user/profile/")
     suspend fun updateProfile(
         @Header("Authorization") bearerToken: String,
         @Body request: ProfileDTO
     ): ProfileDTO
 
-    @PATCH("user/profile")
+    @PATCH("user/profile/")
     suspend fun updateUserHeight(
         @Header("Authorization") bearerToken: String,
         @Body request: UpdateUserHeightRequest
     ): ProfileDTO
 
-    @PATCH("user/profile")
+    @PATCH("user/profile/")
+    suspend fun updateUserWeightGoal(
+        @Header("Authorization") bearerToken: String,
+        @Body request: UpdateUserWeightGoalRequest
+    ): ProfileDTO
+
+    @PATCH("user/profile/")
     suspend fun updateUserDietType(
         @Header("Authorization") bearerToken: String,
         @Body request: UpdateUserDietTypeRequest
     ): ProfileDTO
 
-    @PATCH("user/profile")
+    @PATCH("user/profile/")
     suspend fun updateUserActivityLevel(
         @Header("Authorization") bearerToken: String,
         @Body request: UpdateUserActivityLevelRequest
     ): ProfileDTO
 
-    @PATCH("user/profile")
+    @PATCH("user/profile/")
     suspend fun updateUserConditions(
         @Header("Authorization") bearerToken: String,
         @Body request: UpdateUserConditionsRequest

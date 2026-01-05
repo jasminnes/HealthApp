@@ -13,6 +13,7 @@ import com.tu.health.data.remote.dto.request.UpdateUserActivityLevelRequest
 import com.tu.health.data.remote.dto.request.UpdateUserConditionsRequest
 import com.tu.health.data.remote.dto.request.UpdateUserDietTypeRequest
 import com.tu.health.data.remote.dto.request.UpdateUserHeightRequest
+import com.tu.health.data.remote.dto.request.UpdateUserWeightGoalRequest
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
@@ -36,7 +37,8 @@ class ProfileRepository @Inject constructor(
         height: Float,
         activityLevel: Int,
         dietType: Int,
-        conditions: List<Int>
+        conditions: List<Int>,
+        weightGoal: String
     ): Result<ProfileDTO> {
         return try {
             val request = ProfileDTO(
@@ -44,7 +46,8 @@ class ProfileRepository @Inject constructor(
                 createdDate = "",
                 activityLevel = activityLevel,
                 dietType = dietType,
-                conditions = conditions
+                conditions = conditions,
+                weightGoal = weightGoal
             )
 
             val response = api.updateProfile(
@@ -65,6 +68,23 @@ class ProfileRepository @Inject constructor(
             )
 
             val response = api.updateUserHeight(
+                "Bearer ${secureTokenStore.accessToken.first()}", request
+            )
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateUserWeightGoal(
+        goal: String
+    ): Result<ProfileDTO> {
+        return try {
+            val request = UpdateUserWeightGoalRequest(
+                goal = goal
+            )
+
+            val response = api.updateUserWeightGoal(
                 "Bearer ${secureTokenStore.accessToken.first()}", request
             )
             Result.success(response)

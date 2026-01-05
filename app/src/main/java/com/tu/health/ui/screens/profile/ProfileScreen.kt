@@ -35,6 +35,9 @@ fun ProfileScreen(
     val firstName by profileViewModel.firstName.collectAsState(initial = "")
     val lastName by profileViewModel.lastName.collectAsState(initial = "")
 
+    val weightGoal by profileViewModel.weightGoal.collectAsState(initial = "")
+    var showGoalDialog by remember { mutableStateOf(false) }
+
     val displayName by remember(firstName, lastName) {
         derivedStateOf {
             if (firstName.isNotBlank() || lastName.isNotBlank()) {
@@ -96,6 +99,10 @@ fun ProfileScreen(
                     navController.navigate("measurements")
                 }
 
+                ProfileOptionRow("Weight Goal") {
+                    showGoalDialog = true
+                }
+
                 ProfileOptionRow("Change Password") {
                     navController.navigate("change-password")
                 }
@@ -148,6 +155,23 @@ fun ProfileScreen(
             }
         }
     }
+
+    if (showGoalDialog) {
+        WeightGoalDialog(
+            currentGoal = weightGoal,
+            onDismiss = { showGoalDialog = false },
+            onSave = { newGoal ->
+                profileViewModel.onWeightGoalChange(newGoal)
+                profileViewModel.updateUserWeightGoal { success, error ->
+                    if (!success) {
+                        println("Goal update failed: $error")
+                    }
+                }
+                showGoalDialog = false
+            }
+        )
+    }
+
 }
 
 @Composable
@@ -175,3 +199,95 @@ private fun ProfileOptionRow(text: String, onClick: () -> Unit) {
         )
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WeightGoalDialog(
+    currentGoal: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    val options = listOf(
+        "Maintain Weight",
+        "Lose Weight",
+        "Gain Muscle"
+    )
+
+    var selected by remember { mutableStateOf(currentGoal) }
+    var expanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Weight goal") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = if (currentGoal.isBlank())
+                        "Current: Not set"
+                    else
+                        "Current: $currentGoal",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = selected.ifBlank { "Choose goal" },
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Change to") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        options.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    selected = option
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = selected.isNotBlank() && selected != currentGoal,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                ),
+                onClick = { onSave(selected) }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) { Text("Cancel") }
+        }
+    )
+}
+

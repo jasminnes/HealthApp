@@ -16,5 +16,8 @@ data class ProfileDTO(
     val dietType: Int,
 
     @Json(name = "conditions")
-    val conditions: List<Int>
+    val conditions: List<Int>,
+
+    @Json(name = "weight_goal")
+    val weightGoal: String
 )
