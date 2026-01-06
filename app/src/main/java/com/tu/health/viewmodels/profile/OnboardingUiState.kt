@@ -12,6 +12,7 @@ data class OnboardingUiState(
     val weight: Float = 70f,
     val waist: Float = 75f,
     val neck: Float = 34f,
+    val weightGoal: String = "Maintain Weight",
 
     val selectedDietTypeId: Int? = null,
     val selectedActivityLevelId: Int? = null,

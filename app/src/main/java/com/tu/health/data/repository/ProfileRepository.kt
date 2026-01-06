@@ -7,7 +7,6 @@ import com.tu.health.data.remote.dto.ConditionDTO
 import com.tu.health.data.remote.dto.DietTypeDTO
 import com.tu.health.data.remote.dto.ProfileDTO
 import com.tu.health.data.remote.request.BodyMeasurementRequest
-import com.tu.health.data.remote.request.OnboardingRequest
 import com.tu.health.data.remote.request.ProfileRequest
 import com.tu.health.data.remote.request.UpdateUserConditionsRequest
 import com.tu.health.data.remote.request.UpdateUserDietTypeRequest
@@ -26,14 +25,22 @@ class ProfileRepository @Inject constructor(
         activityLevel: Int,
         dietType: Int,
         conditions: List<Int>,
-        weightGoal: String
+        weightGoal: String,
+        weight: Float,
+        neck: Float,
+        waist: Float
     ): Result<ProfileDTO> {
         val request = ProfileRequest(
             height = height,
             activityLevel = activityLevel,
             dietType = dietType,
             conditions = conditions,
-            weightGoal = weightGoal
+            weightGoal = weightGoal,
+            bodyMeasurements = BodyMeasurementRequest(
+                weight = weight,
+                neck = neck,
+                waist = waist
+            )
         )
         return safeCall { api.updateProfile(request) }
     }
@@ -85,27 +92,4 @@ class ProfileRepository @Inject constructor(
 
     suspend fun deleteBodyMeasurement(id: Int): Result<Unit> =
         safeCallUnit { api.deleteBodyMeasurement(id) }
-
-    suspend fun onboardUser(
-        height: Float,
-        activityLevel: Int,
-        dietType: Int,
-        weight: Float,
-        neck: Float,
-        waist: Float,
-        conditions: List<Int>
-    ): Result<ProfileDTO> {
-        val request = OnboardingRequest(
-            height = height,
-            activityLevel = activityLevel,
-            dietType = dietType,
-            conditions = conditions,
-            bodyMeasurements = BodyMeasurementRequest(
-                weight = weight,
-                neck = neck,
-                waist = waist
-            )
-        )
-        return safeCall { api.onboardUser(request) }
-    }
 }

@@ -30,6 +30,7 @@ fun OnboardingScreen(
     val weight = uiState.weight
     val waist = uiState.waist
     val neck = uiState.neck
+    val weightGoal = uiState.weightGoal
     val isLoading = uiState.isLoading
 
     val activityLevels = uiState.allActivityLevels
@@ -37,7 +38,6 @@ fun OnboardingScreen(
     val conditions = uiState.allConditions
     val selectedConditions = uiState.selectedConditionIds
 
-    // listen for VM messages
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
@@ -48,7 +48,6 @@ fun OnboardingScreen(
         }
     }
 
-    // navigate when complete
     LaunchedEffect(step) {
         if (step == OnboardingStep.COMPLETE) {
             navController.navigate("profile") {
@@ -65,17 +64,19 @@ fun OnboardingScreen(
         LinearProgressIndicator(
             progress = {
                 when (step) {
-                    OnboardingStep.HEIGHT -> 0.2f
-                    OnboardingStep.ACTIVITY_LEVEL -> 0.4f
-                    OnboardingStep.DIET_TYPE -> 0.6f
-                    OnboardingStep.CONDITIONS -> 0.8f
-                    OnboardingStep.BODY_MEASUREMENTS -> 1f
+                    OnboardingStep.HEIGHT -> 1f / 6f
+                    OnboardingStep.ACTIVITY_LEVEL -> 2f / 6f
+                    OnboardingStep.DIET_TYPE -> 3f / 6f
+                    OnboardingStep.CONDITIONS -> 4f / 6f
+                    OnboardingStep.BODY_MEASUREMENTS -> 5f / 6f
+                    OnboardingStep.WEIGHT_GOAL -> 6f / 6f
                     OnboardingStep.COMPLETE -> 1f
                 }
             },
             gapSize = (-15).dp,
             drawStopIndicator = {}
         )
+
 
         Spacer(Modifier.height(24.dp))
 
@@ -118,6 +119,12 @@ fun OnboardingScreen(
                         onNeckChange = viewModel::onNeckChange
                     )
 
+                OnboardingStep.WEIGHT_GOAL ->
+                    WeightGoalStep(
+                        goal = weightGoal,
+                        onGoalChange = viewModel::onWeightGoalChange
+                    )
+
                 OnboardingStep.COMPLETE -> Unit
             }
 
@@ -150,7 +157,7 @@ fun OnboardingScreen(
 
             Button(
                 onClick = {
-                    if (step == OnboardingStep.BODY_MEASUREMENTS) {
+                    if (step == OnboardingStep.WEIGHT_GOAL) {
                         viewModel.onboardUser { success ->
                             if (success) viewModel.complete()
                         }
@@ -165,10 +172,11 @@ fun OnboardingScreen(
                     dietTypeId = dietTypeId,
                     weight = weight,
                     waist = waist,
-                    neck = neck
+                    neck = neck,
+                    weightGoal = weightGoal
                 ) && !isLoading
             ) {
-                Text(if (step == OnboardingStep.BODY_MEASUREMENTS) "Finish" else "Next")
+                Text(if (step == OnboardingStep.WEIGHT_GOAL) "Finish" else "Next")
             }
         }
     }
@@ -181,7 +189,8 @@ private fun isStepValid(
     dietTypeId: Int?,
     weight: Float,
     waist: Float,
-    neck: Float
+    neck: Float,
+    weightGoal: String
 ): Boolean =
     when (step) {
         OnboardingStep.HEIGHT -> height in 50f..250f
@@ -189,5 +198,6 @@ private fun isStepValid(
         OnboardingStep.DIET_TYPE -> dietTypeId != null
         OnboardingStep.CONDITIONS -> true
         OnboardingStep.BODY_MEASUREMENTS -> weight > 0f && waist > 0f && neck > 0f
+        OnboardingStep.WEIGHT_GOAL -> weightGoal in listOf("Gain Muscle", "Lose Weight", "Maintain Weight")
         OnboardingStep.COMPLETE -> true
     }

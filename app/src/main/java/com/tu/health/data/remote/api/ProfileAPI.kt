@@ -6,7 +6,6 @@ import com.tu.health.data.remote.dto.ConditionDTO
 import com.tu.health.data.remote.dto.DietTypeDTO
 import com.tu.health.data.remote.dto.ProfileDTO
 import com.tu.health.data.remote.request.BodyMeasurementRequest
-import com.tu.health.data.remote.request.OnboardingRequest
 import com.tu.health.data.remote.request.ProfileRequest
 import com.tu.health.data.remote.request.UpdateUserConditionsRequest
 import com.tu.health.data.remote.request.UpdateUserDietTypeRequest
@@ -21,11 +20,6 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ProfileAPI {
-
-    @POST("user/onboarding/")
-    suspend fun onboardUser(
-        @Body request: OnboardingRequest
-    ): ProfileDTO
 
     @GET("user/profile/")
     suspend fun getProfile(): ProfileDTO

@@ -51,6 +51,7 @@ class OnboardingViewModel @Inject constructor(
     fun onWeightChange(value: Float) = _uiState.update { it.copy(weight = value) }
     fun onWaistChange(value: Float) = _uiState.update { it.copy(waist = value) }
     fun onNeckChange(value: Float) = _uiState.update { it.copy(neck = value) }
+    fun onWeightGoalChange(value: String) = _uiState.update { it.copy(weightGoal = value) }
 
     fun onDietTypeSelected(id: Int) = _uiState.update { it.copy(selectedDietTypeId = id) }
     fun onActivityLevelSelected(id: Int) = _uiState.update { it.copy(selectedActivityLevelId = id) }
@@ -71,7 +72,8 @@ class OnboardingViewModel @Inject constructor(
                 OnboardingStep.ACTIVITY_LEVEL -> OnboardingStep.DIET_TYPE
                 OnboardingStep.DIET_TYPE -> OnboardingStep.CONDITIONS
                 OnboardingStep.CONDITIONS -> OnboardingStep.BODY_MEASUREMENTS
-                OnboardingStep.BODY_MEASUREMENTS -> OnboardingStep.COMPLETE
+                OnboardingStep.BODY_MEASUREMENTS -> OnboardingStep.WEIGHT_GOAL
+                OnboardingStep.WEIGHT_GOAL -> OnboardingStep.COMPLETE
                 OnboardingStep.COMPLETE -> OnboardingStep.COMPLETE
             }
             state.copy(step = next)
@@ -95,29 +97,30 @@ class OnboardingViewModel @Inject constructor(
         viewModelScope.launch {
             setLoading(true)
 
-            val s = uiState.value
+            val state = uiState.value
 
-            if (s.height !in 50f..250f) {
+            if (state.height !in 50f..250f) {
                 emitMessage("Enter a valid height (50–250 cm)")
                 setLoading(false); onResult(false); return@launch
             }
-            if (s.selectedActivityLevelId == null) {
+            if (state.selectedActivityLevelId == null) {
                 emitMessage("Please select activity level")
                 setLoading(false); onResult(false); return@launch
             }
-            if (s.selectedDietTypeId == null) {
+            if (state.selectedDietTypeId == null) {
                 emitMessage("Please select diet type")
                 setLoading(false); onResult(false); return@launch
             }
 
-            profileRepository.onboardUser(
-                height = s.height,
-                activityLevel = s.selectedActivityLevelId,
-                dietType = s.selectedDietTypeId,
-                weight = s.weight,
-                waist = s.waist,
-                neck = s.neck,
-                conditions = s.selectedConditionIds.toList()
+            profileRepository.updateProfile(
+                height = state.height,
+                activityLevel = state.selectedActivityLevelId,
+                dietType = state.selectedDietTypeId,
+                weight = state.weight,
+                waist = state.waist,
+                neck = state.neck,
+                conditions = state.selectedConditionIds.toList(),
+                weightGoal = state.weightGoal
             ).onSuccess {
                 _uiState.update { it.copy(step = OnboardingStep.COMPLETE) }
                 onResult(true)
