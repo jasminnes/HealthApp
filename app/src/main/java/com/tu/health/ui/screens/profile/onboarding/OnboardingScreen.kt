@@ -1,26 +1,22 @@
 package com.tu.health.ui.screens.profile.onboarding
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.viewmodels.profile.OnboardingStep
 import com.tu.health.viewmodels.profile.OnboardingViewModel
-import com.tu.health.viewmodels.profile.ProfileUiEvent
-import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun OnboardingScreen(
     navController: NavController,
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
     val step = uiState.step
@@ -38,16 +34,6 @@ fun OnboardingScreen(
     val conditions = uiState.allConditions
     val selectedConditions = uiState.selectedConditionIds
 
-    LaunchedEffect(Unit) {
-        viewModel.events.collectLatest { event ->
-            when (event) {
-                is ProfileUiEvent.ShowMessage -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
     LaunchedEffect(step) {
         if (step == OnboardingStep.COMPLETE) {
             navController.navigate("profile") {
@@ -64,19 +50,20 @@ fun OnboardingScreen(
         LinearProgressIndicator(
             progress = {
                 when (step) {
-                    OnboardingStep.HEIGHT -> 1f / 6f
-                    OnboardingStep.ACTIVITY_LEVEL -> 2f / 6f
-                    OnboardingStep.DIET_TYPE -> 3f / 6f
+                    OnboardingStep.HEIGHT -> 1f / 8f
+                    OnboardingStep.ACTIVITY_LEVEL -> 2f / 8f
+                    OnboardingStep.DIET_TYPE -> 3f / 8f
                     OnboardingStep.CONDITIONS -> 4f / 6f
-                    OnboardingStep.BODY_MEASUREMENTS -> 5f / 6f
-                    OnboardingStep.WEIGHT_GOAL -> 6f / 6f
-                    OnboardingStep.COMPLETE -> 1f
+                    OnboardingStep.BODY_MEASUREMENTS -> 5f / 8f
+                    OnboardingStep.WEIGHT_GOAL -> 6f / 8f
+                    OnboardingStep.RECOMMENDED_DIETS -> 7f / 8f
+                    OnboardingStep.SETUP_COMPLETE -> 8f / 8f
+                    OnboardingStep.COMPLETE -> 8f / 8f
                 }
             },
             gapSize = (-15).dp,
             drawStopIndicator = {}
         )
-
 
         Spacer(Modifier.height(24.dp))
 
@@ -125,13 +112,23 @@ fun OnboardingScreen(
                         onGoalChange = viewModel::onWeightGoalChange
                     )
 
+                OnboardingStep.RECOMMENDED_DIETS ->
+                    RecommendedDietsStep(
+                        items = uiState.allDietTypes,
+                        selectedId = uiState.selectedDietTypeId,
+                        onSelect = viewModel::onDietTypeSelected
+                    )
+
+                OnboardingStep.SETUP_COMPLETE ->
+                    SetupCompleteStep()
+
                 OnboardingStep.COMPLETE -> Unit
             }
 
             if (isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
+                    contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
                 }
@@ -140,45 +137,87 @@ fun OnboardingScreen(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            if (step != OnboardingStep.HEIGHT) {
+            if (step != OnboardingStep.HEIGHT && step != OnboardingStep.SETUP_COMPLETE) {
                 TextButton(
                     onClick = viewModel::previousStep,
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
-                ) {
-                    Text("Back")
-                }
+                ) { Text("Back") }
             } else {
-                Spacer(Modifier)
+                Spacer(Modifier.width(1.dp))
+            }
+
+            if (step == OnboardingStep.RECOMMENDED_DIETS) {
+                TextButton(
+                    onClick = { viewModel.nextStep() },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) { Text("Skip") }
+            } else {
+                Spacer(Modifier.width(1.dp))
             }
 
             Button(
                 onClick = {
-                    if (step == OnboardingStep.WEIGHT_GOAL) {
-                        viewModel.onboardUser { success ->
-                            if (success) viewModel.complete()
+                    when (step) {
+                        OnboardingStep.WEIGHT_GOAL -> {
+                            viewModel.onboardUser { success ->
+                                if (success) {
+                                    viewModel.getRecommendedDiets()
+                                }
+                            }
                         }
-                    } else {
-                        viewModel.nextStep()
+
+
+                        OnboardingStep.RECOMMENDED_DIETS -> {
+                            val chosenId = uiState.selectedDietTypeId
+                            if (chosenId == null) {
+                                viewModel.skipRecommendedDiets()
+                            } else {
+                                viewModel.applyRecommendedDiet {
+                                    viewModel.nextStep()
+                                }
+                            }
+                        }
+
+                        OnboardingStep.SETUP_COMPLETE -> {
+                            viewModel.nextStep()
+                        }
+
+                        else -> viewModel.nextStep()
                     }
                 },
-                enabled = isStepValid(
-                    step = step,
-                    height = height,
-                    activityLevelId = activityLevelId,
-                    dietTypeId = dietTypeId,
-                    weight = weight,
-                    waist = waist,
-                    neck = neck,
-                    weightGoal = weightGoal
-                ) && !isLoading
+                enabled = when (step) {
+                    OnboardingStep.RECOMMENDED_DIETS -> uiState.selectedDietTypeId != null && !isLoading
+
+                    else -> isStepValid(
+                        step = step,
+                        height = height,
+                        activityLevelId = activityLevelId,
+                        dietTypeId = dietTypeId,
+                        weight = weight,
+                        waist = waist,
+                        neck = neck,
+                        weightGoal = weightGoal
+                    ) && !isLoading
+                }
             ) {
-                Text(if (step == OnboardingStep.WEIGHT_GOAL) "Finish" else "Next")
+                Text(
+                    when (step) {
+                        OnboardingStep.WEIGHT_GOAL -> "Continue"
+                        OnboardingStep.RECOMMENDED_DIETS -> "Finish"
+                        OnboardingStep.SETUP_COMPLETE -> "Go to Profile"
+                        else -> "Next"
+                    }
+                )
             }
         }
+
     }
 }
 
@@ -190,14 +229,15 @@ private fun isStepValid(
     weight: Float,
     waist: Float,
     neck: Float,
-    weightGoal: String
-): Boolean =
-    when (step) {
-        OnboardingStep.HEIGHT -> height in 50f..250f
-        OnboardingStep.ACTIVITY_LEVEL -> activityLevelId != null
-        OnboardingStep.DIET_TYPE -> dietTypeId != null
-        OnboardingStep.CONDITIONS -> true
-        OnboardingStep.BODY_MEASUREMENTS -> weight > 0f && waist > 0f && neck > 0f
-        OnboardingStep.WEIGHT_GOAL -> weightGoal in listOf("Gain Muscle", "Lose Weight", "Maintain Weight")
-        OnboardingStep.COMPLETE -> true
-    }
+    weightGoal: String,
+): Boolean = when (step) {
+    OnboardingStep.HEIGHT -> height in 50f..250f
+    OnboardingStep.ACTIVITY_LEVEL -> activityLevelId != null
+    OnboardingStep.DIET_TYPE -> dietTypeId != null
+    OnboardingStep.CONDITIONS -> true
+    OnboardingStep.BODY_MEASUREMENTS -> weight > 0f && waist > 0f && neck > 0f
+    OnboardingStep.WEIGHT_GOAL -> weightGoal.isNotBlank()
+    OnboardingStep.RECOMMENDED_DIETS -> true
+    OnboardingStep.SETUP_COMPLETE -> true
+    OnboardingStep.COMPLETE -> true
+}

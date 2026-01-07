@@ -7,5 +7,7 @@ enum class OnboardingStep {
     CONDITIONS,
     BODY_MEASUREMENTS,
     WEIGHT_GOAL,
+    RECOMMENDED_DIETS,
+    SETUP_COMPLETE,
     COMPLETE
 }

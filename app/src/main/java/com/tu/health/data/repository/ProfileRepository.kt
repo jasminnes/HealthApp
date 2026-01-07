@@ -71,6 +71,9 @@ class ProfileRepository @Inject constructor(
     suspend fun getAllDietTypes(): Result<List<DietTypeDTO>> =
         safeCall { api.getAllDietTypes() }
 
+    suspend fun getRecommendedDiets(): Result<List<DietTypeDTO>> =
+        safeCall { api.getRecommendedDiets() }
+
     suspend fun getAllActivityLevels(): Result<List<ActivityDTO>> =
         safeCall { api.getAllActivityLevels() }
 

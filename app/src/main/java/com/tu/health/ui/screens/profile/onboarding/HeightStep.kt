@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 @Composable
 fun HeightStep(
@@ -28,7 +29,7 @@ fun HeightStep(
             value = height,
             onValueChange = { onHeightChange(it) },
             valueRange = 120f..220f,
-            steps = 100,
+            steps = (220 - 120 - 1),
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary
@@ -38,7 +39,7 @@ fun HeightStep(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "$height cm",
+            text = "${height.roundToInt()} cm",
             style = MaterialTheme.typography.bodyLarge
         )
     }

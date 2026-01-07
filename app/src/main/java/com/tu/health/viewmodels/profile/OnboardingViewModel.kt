@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -73,7 +74,9 @@ class OnboardingViewModel @Inject constructor(
                 OnboardingStep.DIET_TYPE -> OnboardingStep.CONDITIONS
                 OnboardingStep.CONDITIONS -> OnboardingStep.BODY_MEASUREMENTS
                 OnboardingStep.BODY_MEASUREMENTS -> OnboardingStep.WEIGHT_GOAL
-                OnboardingStep.WEIGHT_GOAL -> OnboardingStep.COMPLETE
+                OnboardingStep.WEIGHT_GOAL -> OnboardingStep.RECOMMENDED_DIETS
+                OnboardingStep.RECOMMENDED_DIETS -> OnboardingStep.SETUP_COMPLETE
+                OnboardingStep.SETUP_COMPLETE -> OnboardingStep.COMPLETE
                 OnboardingStep.COMPLETE -> OnboardingStep.COMPLETE
             }
             state.copy(step = next)
@@ -87,11 +90,15 @@ class OnboardingViewModel @Inject constructor(
                 OnboardingStep.DIET_TYPE -> OnboardingStep.ACTIVITY_LEVEL
                 OnboardingStep.CONDITIONS -> OnboardingStep.DIET_TYPE
                 OnboardingStep.BODY_MEASUREMENTS -> OnboardingStep.CONDITIONS
+                OnboardingStep.WEIGHT_GOAL -> OnboardingStep.BODY_MEASUREMENTS
+                OnboardingStep.RECOMMENDED_DIETS -> OnboardingStep.WEIGHT_GOAL
+                OnboardingStep.SETUP_COMPLETE -> OnboardingStep.RECOMMENDED_DIETS
                 else -> state.step
             }
             state.copy(step = prev)
         }
     }
+
 
     fun onboardUser(onResult: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
@@ -122,7 +129,6 @@ class OnboardingViewModel @Inject constructor(
                 conditions = state.selectedConditionIds.toList(),
                 weightGoal = state.weightGoal
             ).onSuccess {
-                _uiState.update { it.copy(step = OnboardingStep.COMPLETE) }
                 onResult(true)
             }.onFailure { e ->
                 emitMessage(e.localizedMessage ?: "Onboarding failed")
@@ -133,8 +139,59 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
-    fun complete() {
-        _uiState.update { it.copy(step = OnboardingStep.COMPLETE) }
+    fun getRecommendedDiets() {
+        viewModelScope.launch {
+            setLoading(true)
+
+            profileRepository.getRecommendedDiets()
+                .onSuccess { diets ->
+                    _uiState.update {
+                        it.copy(
+                            allDietTypes = diets,
+                            selectedDietTypeId = null
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    val httpCode = (e as? HttpException)?.code()
+
+                    if (httpCode == 404) {
+                        _uiState.update { it.copy(step = OnboardingStep.SETUP_COMPLETE) }
+                    } else {
+                        _uiState.update { it.copy(step = OnboardingStep.RECOMMENDED_DIETS) }
+                    }
+                }
+
+            setLoading(false)
+        }
+    }
+
+
+    fun applyRecommendedDiet(onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            setLoading(true)
+
+            val chosenId = uiState.value.selectedDietTypeId
+            if (chosenId == null) {
+                emitMessage("Select a diet or press Skip")
+                setLoading(false)
+                return@launch
+            }
+
+            profileRepository.updateUserDietType(dietType = chosenId)
+                .onSuccess {
+                    onDone()
+                }
+                .onFailure { e ->
+                    emitMessage(e.localizedMessage ?: "Failed to apply diet.")
+                }
+
+            setLoading(false)
+        }
+    }
+
+    fun skipRecommendedDiets() {
+        nextStep()
     }
 
     private fun setLoading(value: Boolean) {

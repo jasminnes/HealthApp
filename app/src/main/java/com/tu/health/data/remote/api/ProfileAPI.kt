@@ -66,6 +66,9 @@ interface ProfileAPI {
     @GET("user/conditions/")
     suspend fun getAllConditions(): List<ConditionDTO>
 
+    @GET("diets/top-recommended-diets/")
+    suspend fun getRecommendedDiets(): List<DietTypeDTO>
+
     @GET("diets/type/")
     suspend fun getAllDietTypes(): List<DietTypeDTO>
 
