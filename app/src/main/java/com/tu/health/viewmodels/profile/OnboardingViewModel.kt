@@ -151,6 +151,7 @@ class OnboardingViewModel @Inject constructor(
                             selectedDietTypeId = null
                         )
                     }
+                    _uiState.update { it.copy(step = OnboardingStep.RECOMMENDED_DIETS) }
                 }
                 .onFailure { e ->
                     val httpCode = (e as? HttpException)?.code()
@@ -158,14 +159,13 @@ class OnboardingViewModel @Inject constructor(
                     if (httpCode == 404) {
                         _uiState.update { it.copy(step = OnboardingStep.SETUP_COMPLETE) }
                     } else {
-                        _uiState.update { it.copy(step = OnboardingStep.RECOMMENDED_DIETS) }
+                        _uiState.update { it.copy(step = OnboardingStep.COMPLETE) }
                     }
                 }
 
             setLoading(false)
         }
     }
-
 
     fun applyRecommendedDiet(onDone: () -> Unit = {}) {
         viewModelScope.launch {

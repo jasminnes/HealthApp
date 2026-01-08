@@ -36,7 +36,7 @@ fun OnboardingScreen(
 
     LaunchedEffect(step) {
         if (step == OnboardingStep.COMPLETE) {
-            navController.navigate("profile") {
+            navController.navigate("health-connect-setup") {
                 popUpTo("onboarding") { inclusive = true }
             }
         }

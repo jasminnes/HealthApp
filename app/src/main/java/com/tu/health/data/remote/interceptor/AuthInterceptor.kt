@@ -1,7 +1,7 @@
 package com.tu.health.data.remote.interceptor
 
 import com.tu.health.data.local.SecureTokenStore
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -11,15 +11,26 @@ class AuthInterceptor @Inject constructor(
     private val secureTokenStore: SecureTokenStore
 ) : Interceptor {
 
+    private val noAuthPaths = setOf(
+        "/account/register/",
+        "/account/login/",
+    )
+
     override fun intercept(chain: Interceptor.Chain): Response {
-        val token = runBlocking { secureTokenStore.accessToken.first() }
+        val request = chain.request()
+        val path = request.url.encodedPath
 
-        val req = chain.request().newBuilder().apply {
-            if (!token.isNullOrBlank()) {
-                header("Authorization", "Bearer $token")
-            }
-        }.build()
+        if (noAuthPaths.any { path.endsWith(it) }) {
+            return chain.proceed(request)
+        }
 
-        return chain.proceed(req)
+        val token = runBlocking { secureTokenStore.accessToken.firstOrNull() }.orEmpty()
+        if (token.isBlank()) return chain.proceed(request)
+
+        val authed = request.newBuilder()
+            .header("Authorization", "Bearer $token")
+            .build()
+
+        return chain.proceed(authed)
     }
 }
