@@ -15,6 +15,9 @@ sealed class Screen(val route: String) {
     object DietType : Screen("diet")
     object HealthConditions : Screen("conditions")
 
+    // HealthConnect
+    object HealthConnectSetup : Screen("health-connect-setup")
+
     // Nutrition
     object Macros : Screen("macros")
     object FoodDetails : Screen("food-details/{id}")

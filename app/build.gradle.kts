@@ -69,7 +69,7 @@ dependencies {
     implementation(libs.coroutines.android)
 
     // HealthConnect
-    implementation(libs.androidx.health.connect)
+    implementation(libs.androidx.connect.client)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)

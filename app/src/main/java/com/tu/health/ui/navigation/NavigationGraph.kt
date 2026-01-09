@@ -19,6 +19,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.tu.health.ui.screens.authentication.AuthenticationScreen
 import com.tu.health.ui.screens.authentication.LogInScreen
 import com.tu.health.ui.screens.authentication.SignUpScreen
+import com.tu.health.ui.screens.healthconnect.HealthConnectScreen
 import com.tu.health.ui.screens.nutrition.FoodDetailsScreen
 import com.tu.health.ui.screens.nutrition.FoodSearchScreen
 import com.tu.health.ui.screens.nutrition.MacrosScreen
@@ -54,7 +55,8 @@ fun NavigationGraph(
             Screen.Authentication.route,
             Screen.SignUp.route,
             Screen.LogIn.route,
-            Screen.Onboarding.route
+            Screen.Onboarding.route,
+            Screen.HealthConnectSetup.route
         )
 
         bottomBarState.value = currentRoute !in navOffScreens
@@ -94,6 +96,9 @@ fun NavigationGraph(
                 composable(Screen.BodyMeasurements.route) { BodyMeasurementsScreen(navController) }
                 composable(Screen.DietType.route) { DietTypeScreen(navController) }
                 composable(Screen.HealthConditions.route) { HealthConditionsScreen(navController) }
+
+                // HealthConnect
+                composable(Screen.HealthConnectSetup.route) { HealthConnectScreen(navController) }
 
                 // Navigation
                 composable(Screen.Macros.route) { MacrosScreen(navController) }
