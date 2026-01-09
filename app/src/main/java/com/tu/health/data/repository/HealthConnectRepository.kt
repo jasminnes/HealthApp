@@ -1,14 +1,29 @@
 package com.tu.health.data.repository
 
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.records.ExerciseSessionRecord
+import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
+import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
 import androidx.health.connect.client.request.AggregateRequest
+import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import com.tu.health.data.healthconnect.dto.ExerciseItem
+import com.tu.health.data.healthconnect.dto.ExerciseSummary
+import com.tu.health.data.healthconnect.dto.HealthSnapshot
+import com.tu.health.data.healthconnect.dto.HeartRateDaySummary
+import com.tu.health.data.healthconnect.dto.HrvDaySummary
+import com.tu.health.data.healthconnect.dto.SleepSummary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 class HealthConnectRepository @Inject constructor(
     private val client: HealthConnectClient
@@ -18,11 +33,15 @@ class HealthConnectRepository @Inject constructor(
         granted.containsAll(permissions)
     }
 
-    suspend fun readTodayStepsTotal(): Long = withContext(Dispatchers.IO) {
+    private fun todayRange(): Pair<Instant, Instant> {
         val zone = ZoneId.systemDefault()
         val start = LocalDate.now(zone).atStartOfDay(zone).toInstant()
         val end = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant()
+        return start to end
+    }
 
+    suspend fun readTodayStepsTotal(): Long = withContext(Dispatchers.IO) {
+        val (start, end) = todayRange()
         val response = client.aggregate(
             AggregateRequest(
                 metrics = setOf(StepsRecord.COUNT_TOTAL),
@@ -30,5 +49,150 @@ class HealthConnectRepository @Inject constructor(
             )
         )
         response[StepsRecord.COUNT_TOTAL] ?: 0L
+    }
+
+    suspend fun readTodayHeartRateSummary(): HeartRateDaySummary = withContext(Dispatchers.IO) {
+        val (start, end) = todayRange()
+
+        val records = client.readRecords(
+            ReadRecordsRequest(
+                recordType = HeartRateRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end),
+                pageSize = 500
+            )
+        ).records
+
+        val samples = records.flatMap { it.samples }
+        if (samples.isEmpty()) {
+            return@withContext HeartRateDaySummary(null, null, null, null)
+        }
+
+        val values = samples.map { it.beatsPerMinute }.map { it.toInt() }
+        val min = values.minOrNull()
+        val max = values.maxOrNull()
+        val avg = (values.sum().toDouble() / values.size).roundToInt()
+        val latest = samples.maxByOrNull { it.time }?.beatsPerMinute?.toInt()
+
+        HeartRateDaySummary(
+            minBpm = min,
+            avgBpm = avg,
+            maxBpm = max,
+            latestBpm = latest
+        )
+    }
+
+    suspend fun readTodayHrvRmssdSummary(): HrvDaySummary = withContext(Dispatchers.IO) {
+        val (start, end) = todayRange()
+
+        val records = client.readRecords(
+            ReadRecordsRequest(
+                recordType = HeartRateVariabilityRmssdRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end),
+                pageSize = 500
+            )
+        ).records
+
+        if (records.isEmpty()) {
+            return@withContext HrvDaySummary(null, null)
+        }
+
+        val values = records.map { it.heartRateVariabilityMillis }
+        val avg = values.average()
+        val latest = records.maxByOrNull { it.time }?.heartRateVariabilityMillis
+
+        HrvDaySummary(avgRmssdMs = avg, latestRmssdMs = latest)
+    }
+
+    suspend fun readLatestSleepSummary(): SleepSummary = withContext(Dispatchers.IO) {
+        val (start, end) = todayRange()
+
+        val sessions = client.readRecords(
+            ReadRecordsRequest(
+                recordType = SleepSessionRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end),
+                pageSize = 100
+            )
+        ).records
+
+        val latest = sessions.maxByOrNull { it.endTime }
+            ?: return@withContext SleepSummary(durationMinutes = null)
+
+        val durationMinutes = Duration.between(latest.startTime, latest.endTime).toMinutes()
+
+        SleepSummary(
+            durationMinutes = durationMinutes
+        )
+    }
+
+    private suspend fun aggregateActiveCalories(start: Instant, end: Instant): Double? {
+        val response = client.aggregate(
+            AggregateRequest(
+                metrics = setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
+                timeRangeFilter = TimeRangeFilter.between(start, end)
+            )
+        )
+        return response[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories
+    }
+
+    suspend fun readExerciseSummary(): ExerciseSummary = withContext(Dispatchers.IO) {
+        val (start, end) = todayRange()
+
+        val sessions = client.readRecords(
+            ReadRecordsRequest(
+                recordType = ExerciseSessionRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end),
+                pageSize = 200
+            )
+        ).records.sortedByDescending { it.endTime }
+
+        val items = mutableListOf<ExerciseItem>()
+
+        var totalDurationMinutes = 0L
+        var totalActiveKcal: Double? = 0.0
+
+        for (s in sessions) {
+            val durMin = Duration.between(s.startTime, s.endTime).toMinutes()
+            totalDurationMinutes += durMin
+
+            val activeKcal = try { aggregateActiveCalories(s.startTime, s.endTime) } catch (_: Throwable) { null }
+
+            items += ExerciseItem(
+                exerciseType = s.exerciseType,
+                durationMinutes = durMin,
+                activeCaloriesKcal = activeKcal,
+            )
+
+            totalActiveKcal = when {
+                totalActiveKcal == null -> null
+                activeKcal == null -> null
+                else -> totalActiveKcal + activeKcal
+            }
+        }
+
+        if (items.isEmpty()) {
+            totalActiveKcal = null
+        }
+
+        ExerciseSummary(
+            totalDurationMinutes = totalDurationMinutes,
+            totalActiveCaloriesKcal = totalActiveKcal,
+            sessions = items
+        )
+    }
+
+    suspend fun readHealthSnapshot(): HealthSnapshot = withContext(Dispatchers.IO) {
+        val steps = readTodayStepsTotal()
+        val hr = readTodayHeartRateSummary()
+        val hrv = readTodayHrvRmssdSummary()
+        val sleep = readLatestSleepSummary()
+        val exercise = readExerciseSummary()
+
+        HealthSnapshot(
+            todaySteps = steps,
+            heartRateToday = hr,
+            hrvToday = hrv,
+            latestSleep = sleep,
+            exerciseToday = exercise
+        )
     }
 }

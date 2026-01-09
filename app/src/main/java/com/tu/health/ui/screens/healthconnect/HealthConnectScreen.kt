@@ -14,7 +14,7 @@ import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.HealthConnectClient
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.tu.health.data.healthconnect.StepsReadPermissions
+import com.tu.health.data.healthconnect.HealthReadPermissions
 import com.tu.health.viewmodels.healthconnect.HcUiState
 import com.tu.health.viewmodels.healthconnect.HealthConnectViewModel
 
@@ -100,13 +100,13 @@ fun HealthConnectScreen(
                 Text("Connect Health Connect", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "We use your steps to show your daily activity and progress. " +
-                            "You can revoke access anytime in Settings."
+                    "We request access to Steps, Heart Rate/HRV, Sleep, and Exercise sessions " +
+                            "to power your health insights. You can revoke access anytime in Settings."
                 )
                 Spacer(Modifier.height(16.dp))
 
-                Button(onClick = { permissionLauncher.launch(StepsReadPermissions) }) {
-                    Text("Grant steps permission")
+                Button(onClick = { permissionLauncher.launch(HealthReadPermissions) }) {
+                    Text("Grant permissions")
                 }
 
                 Spacer(Modifier.height(12.dp))
@@ -135,11 +135,38 @@ fun HealthConnectScreen(
         }
 
         is HcUiState.Ready -> {
-            val steps = s.todaySteps
+            val snap = s.snapshot
             Column(Modifier.padding(16.dp)) {
                 Text("Connected!", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(8.dp))
-                Text("Today’s steps: $steps")
+
+                Text("Today’s steps: ${snap.todaySteps}")
+
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Heart rate (today): " +
+                            "min ${snap.heartRateToday.minBpm ?: "-"} / " +
+                            "avg ${snap.heartRateToday.avgBpm ?: "-"} / " +
+                            "max ${snap.heartRateToday.maxBpm ?: "-"} / " +
+                            "latest ${snap.heartRateToday.latestBpm ?: "-"}"
+                )
+
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "HRV RMSSD (today): " +
+                            "avg ${snap.hrvToday.avgRmssdMs?.let { "%.1f".format(it) } ?: "-"} ms / " +
+                            "latest ${snap.hrvToday.latestRmssdMs?.let { "%.1f".format(it) } ?: "-"} ms"
+                )
+
+                Spacer(Modifier.height(8.dp))
+                Text("Sleep duration: ${snap.latestSleep.durationMinutes ?: "-"} min")
+
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Exercise today: ${snap.exerciseToday.totalDurationMinutes} min, " +
+                            "active kcal ${snap.exerciseToday.totalActiveCaloriesKcal?.let { "%.0f".format(it) } ?: "-"}"
+                )
+
                 Spacer(Modifier.height(16.dp))
                 CircularProgressIndicator()
             }

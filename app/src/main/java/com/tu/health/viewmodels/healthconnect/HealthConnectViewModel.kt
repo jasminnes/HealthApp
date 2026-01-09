@@ -4,8 +4,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tu.health.data.healthconnect.HcAvailability
-import com.tu.health.data.healthconnect.StepsReadPermissions
+import com.tu.health.data.healthconnect.HealthReadPermissions
 import com.tu.health.data.healthconnect.getHealthConnectAvailability
+import com.tu.health.data.healthconnect.dto.HealthSnapshot
 import com.tu.health.data.repository.HealthConnectRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -19,7 +20,11 @@ sealed class HcUiState {
     data object NotSupported : HcUiState()
     data object NeedsProviderUpdate : HcUiState()
     data object NeedsPermission : HcUiState()
-    data class Ready(val todaySteps: Long) : HcUiState()
+
+    data class Ready(
+        val snapshot: HealthSnapshot
+    ) : HcUiState()
+
     data class Error(val message: String) : HcUiState()
 }
 
@@ -49,14 +54,15 @@ class HealthConnectViewModel @Inject constructor(
                     HcAvailability.Available -> Unit
                 }
 
-                val hasPerms = repo.hasAllPermissions(StepsReadPermissions)
+                val hasPerms = repo.hasAllPermissions(HealthReadPermissions)
                 if (!hasPerms) {
                     _state.value = HcUiState.NeedsPermission
                     return@launch
                 }
 
-                val steps = repo.readTodayStepsTotal()
-                _state.value = HcUiState.Ready(steps)
+                val snapshot = repo.readHealthSnapshot()
+                _state.value = HcUiState.Ready(snapshot)
+
             } catch (t: Throwable) {
                 _state.value = HcUiState.Error(t.message ?: "Unknown error")
             }
