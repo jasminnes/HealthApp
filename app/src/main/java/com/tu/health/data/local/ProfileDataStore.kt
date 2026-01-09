@@ -16,6 +16,7 @@ class ProfileDataStore @Inject constructor(
         val EMAIL = stringPreferencesKey("email")
         val FIRST_NAME = stringPreferencesKey("first_name")
         val LAST_NAME = stringPreferencesKey("last_name")
+        val LAST_HEALTH_UPLOAD_DAY = stringPreferencesKey("last_health_upload_day")
     }
 
     val profileFlow: Flow<UserProfileLocal> = dataStore.data
@@ -27,9 +28,13 @@ class ProfileDataStore @Inject constructor(
             )
         }
 
+    val lastHealthUploadDayFlow: Flow<String?> = dataStore.data
+        .map { prefs -> prefs[LAST_HEALTH_UPLOAD_DAY] }
+
     suspend fun saveEmail(value: String) = dataStore.edit { it[EMAIL] = value }
     suspend fun saveFirstName(value: String) = dataStore.edit { it[FIRST_NAME] = value }
     suspend fun saveLastName(value: String) = dataStore.edit { it[LAST_NAME] = value }
+    suspend fun saveLastHealthUploadDay(value: String) = dataStore.edit { it[LAST_HEALTH_UPLOAD_DAY] = value }
 
     suspend fun clear() = dataStore.edit {
         it.clear()

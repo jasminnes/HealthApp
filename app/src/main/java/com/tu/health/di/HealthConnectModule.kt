@@ -1,4 +1,4 @@
-package com.tu.health.data.healthconnect
+package com.tu.health.di
 
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
@@ -17,5 +17,5 @@ object HealthConnectModule {
     @Singleton
     fun provideHealthConnectClient(
         @ApplicationContext context: Context
-    ): HealthConnectClient = HealthConnectClient.getOrCreate(context)
+    ): HealthConnectClient = HealthConnectClient.Companion.getOrCreate(context)
 }

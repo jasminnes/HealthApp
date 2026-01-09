@@ -1,12 +1,15 @@
-package com.tu.health.ui.screens.healthconnect
+package com.tu.health.ui.screens.profile.onboarding
 
+import android.content.Context
 import android.content.Intent
+import android.health.connect.HealthConnectManager
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -15,8 +18,8 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.data.healthconnect.HealthReadPermissions
-import com.tu.health.viewmodels.healthconnect.HcUiState
-import com.tu.health.viewmodels.healthconnect.HealthConnectViewModel
+import com.tu.health.viewmodels.profile.HcUiState
+import com.tu.health.viewmodels.profile.HealthConnectViewModel
 
 @Composable
 fun HealthConnectScreen(
@@ -45,7 +48,7 @@ fun HealthConnectScreen(
 
     when (val s = state) {
         is HcUiState.Checking -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
@@ -209,10 +212,10 @@ private fun InfoCard(title: String, body: String) {
     }
 }
 
-private fun openManageHealthPermissions(context: android.content.Context) {
+private fun openManageHealthPermissions(context: Context) {
     try {
         if (Build.VERSION.SDK_INT >= 34) {
-            val intent = Intent(android.health.connect.HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS).apply {
+            val intent = Intent(HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS).apply {
                 putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
             }
             context.startActivity(intent)
@@ -223,7 +226,7 @@ private fun openManageHealthPermissions(context: android.content.Context) {
     } catch (_: Throwable) { }
 }
 
-private fun openHealthConnectOnPlay(context: android.content.Context) {
+private fun openHealthConnectOnPlay(context: Context) {
     val providerPackage = "com.google.android.apps.healthdata"
     val uriString = "market://details?id=$providerPackage&url=healthconnect%3A%2F%2Fonboarding"
     context.startActivity(

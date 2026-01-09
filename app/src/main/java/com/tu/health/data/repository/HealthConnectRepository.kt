@@ -33,15 +33,14 @@ class HealthConnectRepository @Inject constructor(
         granted.containsAll(permissions)
     }
 
-    private fun todayRange(): Pair<Instant, Instant> {
-        val zone = ZoneId.systemDefault()
-        val start = LocalDate.now(zone).atStartOfDay(zone).toInstant()
-        val end = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant()
+    private fun dayRange(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Pair<Instant, Instant> {
+        val start = date.atStartOfDay(zone).toInstant()
+        val end = date.plusDays(1).atStartOfDay(zone).toInstant()
         return start to end
     }
 
-    suspend fun readTodayStepsTotal(): Long = withContext(Dispatchers.IO) {
-        val (start, end) = todayRange()
+    suspend fun readStepsTotal(date: LocalDate): Long = withContext(Dispatchers.IO) {
+        val (start, end) = dayRange(date)
         val response = client.aggregate(
             AggregateRequest(
                 metrics = setOf(StepsRecord.COUNT_TOTAL),
@@ -51,8 +50,8 @@ class HealthConnectRepository @Inject constructor(
         response[StepsRecord.COUNT_TOTAL] ?: 0L
     }
 
-    suspend fun readTodayHeartRateSummary(): HeartRateDaySummary = withContext(Dispatchers.IO) {
-        val (start, end) = todayRange()
+    suspend fun readHeartRateSummary(date: LocalDate): HeartRateDaySummary = withContext(Dispatchers.IO) {
+        val (start, end) = dayRange(date)
 
         val records = client.readRecords(
             ReadRecordsRequest(
@@ -81,8 +80,8 @@ class HealthConnectRepository @Inject constructor(
         )
     }
 
-    suspend fun readTodayHrvRmssdSummary(): HrvDaySummary = withContext(Dispatchers.IO) {
-        val (start, end) = todayRange()
+    suspend fun readHrvRmssdSummary(date: LocalDate): HrvDaySummary = withContext(Dispatchers.IO) {
+        val (start, end) = dayRange(date)
 
         val records = client.readRecords(
             ReadRecordsRequest(
@@ -103,25 +102,27 @@ class HealthConnectRepository @Inject constructor(
         HrvDaySummary(avgRmssdMs = avg, latestRmssdMs = latest)
     }
 
-    suspend fun readLatestSleepSummary(): SleepSummary = withContext(Dispatchers.IO) {
-        val (start, end) = todayRange()
+    suspend fun readSleepSummaryForDate(date: LocalDate): SleepSummary = withContext(Dispatchers.IO) {
+        val zone = ZoneId.systemDefault()
+
+        val windowStart = date.minusDays(1).atStartOfDay(zone).toInstant()
+        val windowEnd = date.plusDays(1).atStartOfDay(zone).toInstant()
 
         val sessions = client.readRecords(
             ReadRecordsRequest(
                 recordType = SleepSessionRecord::class,
-                timeRangeFilter = TimeRangeFilter.between(start, end),
-                pageSize = 100
+                timeRangeFilter = TimeRangeFilter.between(windowStart, windowEnd),
+                pageSize = 200
             )
         ).records
 
-        val latest = sessions.maxByOrNull { it.endTime }
+        val best = sessions
+            .filter { s -> LocalDate.ofInstant(s.endTime, zone) == date }
+            .maxByOrNull { it.endTime }
             ?: return@withContext SleepSummary(durationMinutes = null)
 
-        val durationMinutes = Duration.between(latest.startTime, latest.endTime).toMinutes()
-
-        SleepSummary(
-            durationMinutes = durationMinutes
-        )
+        val durationMinutes = Duration.between(best.startTime, best.endTime).toMinutes()
+        SleepSummary(durationMinutes = durationMinutes)
     }
 
     private suspend fun aggregateActiveCalories(start: Instant, end: Instant): Double? {
@@ -134,8 +135,8 @@ class HealthConnectRepository @Inject constructor(
         return response[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories
     }
 
-    suspend fun readExerciseSummary(): ExerciseSummary = withContext(Dispatchers.IO) {
-        val (start, end) = todayRange()
+    suspend fun readExerciseSummary(date: LocalDate): ExerciseSummary = withContext(Dispatchers.IO) {
+        val (start, end) = dayRange(date)
 
         val sessions = client.readRecords(
             ReadRecordsRequest(
@@ -146,7 +147,6 @@ class HealthConnectRepository @Inject constructor(
         ).records.sortedByDescending { it.endTime }
 
         val items = mutableListOf<ExerciseItem>()
-
         var totalDurationMinutes = 0L
         var totalActiveKcal: Double? = 0.0
 
@@ -169,9 +169,7 @@ class HealthConnectRepository @Inject constructor(
             }
         }
 
-        if (items.isEmpty()) {
-            totalActiveKcal = null
-        }
+        if (items.isEmpty()) totalActiveKcal = null
 
         ExerciseSummary(
             totalDurationMinutes = totalDurationMinutes,
@@ -180,12 +178,12 @@ class HealthConnectRepository @Inject constructor(
         )
     }
 
-    suspend fun readHealthSnapshot(): HealthSnapshot = withContext(Dispatchers.IO) {
-        val steps = readTodayStepsTotal()
-        val hr = readTodayHeartRateSummary()
-        val hrv = readTodayHrvRmssdSummary()
-        val sleep = readLatestSleepSummary()
-        val exercise = readExerciseSummary()
+    suspend fun readHealthSnapshotForDate(date: LocalDate): HealthSnapshot = withContext(Dispatchers.IO) {
+        val steps = readStepsTotal(date)
+        val hr = readHeartRateSummary(date)
+        val hrv = readHrvRmssdSummary(date)
+        val sleep = readSleepSummaryForDate(date)
+        val exercise = readExerciseSummary(date)
 
         HealthSnapshot(
             todaySteps = steps,

@@ -40,6 +40,10 @@ fun MacrosScreen(
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+        viewModel.syncHealthOncePerDay()
+    }
+
+    LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
                 is NutritionUiEvent.ShowMessage -> {

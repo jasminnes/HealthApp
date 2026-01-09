@@ -1,4 +1,4 @@
-package com.tu.health.viewmodels.healthconnect
+package com.tu.health.viewmodels.profile
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.time.LocalDate
+import java.time.ZoneId
 
 sealed class HcUiState {
     data object Checking : HcUiState()
@@ -60,7 +62,11 @@ class HealthConnectViewModel @Inject constructor(
                     return@launch
                 }
 
-                val snapshot = repo.readHealthSnapshot()
+                val zone = ZoneId.systemDefault()
+                val today = LocalDate.now(zone)
+
+                val snapshot = repo.readHealthSnapshotForDate(today)
+
                 _state.value = HcUiState.Ready(snapshot)
 
             } catch (t: Throwable) {

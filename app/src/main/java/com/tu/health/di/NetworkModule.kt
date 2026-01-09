@@ -3,6 +3,7 @@ package com.tu.health.di
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.tu.health.data.remote.api.AuthAPI
+import com.tu.health.data.remote.api.HealthAPI
 import com.tu.health.data.remote.api.NutritionAPI
 import com.tu.health.data.remote.api.ProfileAPI
 import com.tu.health.data.remote.interceptor.AuthInterceptor
@@ -66,4 +67,9 @@ object NetworkModule {
     @Singleton
     fun provideNutritionAPI(retrofit: Retrofit): NutritionAPI =
         retrofit.create(NutritionAPI::class.java)
+
+    @Provides
+    @Singleton
+    fun provideHealthAPI(retrofit: Retrofit): HealthAPI =
+        retrofit.create(HealthAPI::class.java)
 }

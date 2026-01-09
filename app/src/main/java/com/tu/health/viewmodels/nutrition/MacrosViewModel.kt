@@ -3,6 +3,7 @@ package com.tu.health.viewmodels.nutrition
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tu.health.data.remote.dto.TrackedFoodDTO
+import com.tu.health.data.repository.HealthSyncRepository
 import com.tu.health.data.repository.NutritionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -12,7 +13,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MacrosViewModel @Inject constructor(
-    private val nutritionRepository: NutritionRepository
+    private val nutritionRepository: NutritionRepository,
+    private val healthSyncRepository: HealthSyncRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MacrosUiState())
@@ -30,6 +32,12 @@ class MacrosViewModel @Inject constructor(
     fun onProteinChange(value: Float) = _uiState.update { it.copy(protein = value) }
     fun onFatChange(value: Float) = _uiState.update { it.copy(fat = value) }
     fun onQuantityChange(value: Float) = _uiState.update { it.copy(quantity = value) }
+
+    fun syncHealthOncePerDay() {
+        viewModelScope.launch {
+            healthSyncRepository.syncYesterdayOncePerDay()
+        }
+    }
 
     fun getMacroPlan() {
         viewModelScope.launch {
