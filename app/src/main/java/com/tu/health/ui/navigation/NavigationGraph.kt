@@ -39,11 +39,12 @@ fun NavigationGraph(
     startViewModel: StartViewModel = hiltViewModel()
 ) {
     val isLoading by startViewModel.isLoading.collectAsState()
-    val isLoggedIn by startViewModel.isLoggedInFlow.collectAsState()
+    val showAuth by startViewModel.showAuth.collectAsState()
 
-    val startDestination = when {
-        !isLoggedIn -> Screen.Authentication.route
-        else -> Screen.Macros.route
+    val startDestination = if (showAuth) {
+        Screen.Authentication.route
+    } else {
+        Screen.Macros.route
     }
 
     if (!isLoading) {
@@ -61,8 +62,8 @@ fun NavigationGraph(
 
         bottomBarState.value = currentRoute !in navOffScreens
 
-        if (!isLoggedIn) {
-            LaunchedEffect(Unit) {
+        LaunchedEffect(showAuth) {
+            if (showAuth) {
                 navController.navigate(Screen.Authentication.route) {
                     popUpTo(0) { inclusive = true }
                 }
