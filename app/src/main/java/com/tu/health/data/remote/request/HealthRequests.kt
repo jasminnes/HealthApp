@@ -32,3 +32,7 @@ data class ExerciseRequest(
     @Json(name = "total_active_calories_kcal") val totalActiveCaloriesKcal: Any,
     @Json(name = "sessions") val sessionsCount: Int,
 )
+
+data class RecommendationsRequest(
+    @Json(name = "status") val status: String,
+)

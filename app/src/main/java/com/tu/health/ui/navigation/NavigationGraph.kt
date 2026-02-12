@@ -1,7 +1,5 @@
 package com.tu.health.ui.navigation
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -19,6 +17,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.tu.health.ui.screens.authentication.AuthenticationScreen
 import com.tu.health.ui.screens.authentication.LogInScreen
 import com.tu.health.ui.screens.authentication.SignUpScreen
+import com.tu.health.ui.screens.health.HealthScoreScreen
+import com.tu.health.ui.screens.health.RecommendationDetailsScreen
 import com.tu.health.ui.screens.profile.onboarding.HealthConnectScreen
 import com.tu.health.ui.screens.nutrition.FoodDetailsScreen
 import com.tu.health.ui.screens.nutrition.FoodSearchScreen
@@ -31,7 +31,6 @@ import com.tu.health.ui.screens.profile.DietTypeScreen
 import com.tu.health.ui.screens.profile.HealthConditionsScreen
 import com.tu.health.viewmodels.StartViewModel
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NavigationGraph(
     modifier: Modifier = Modifier,
@@ -44,7 +43,7 @@ fun NavigationGraph(
     val startDestination = if (showAuth) {
         Screen.Authentication.route
     } else {
-        Screen.Macros.route
+        Screen.HealthScore.route
     }
 
     if (!isLoading) {
@@ -84,6 +83,8 @@ fun NavigationGraph(
                 modifier = modifier.padding(paddingValues)
             ) {
                 // Main screens
+                composable(Screen.HealthScore.route) { HealthScoreScreen(navController) }
+                composable(Screen.Macros.route) { MacrosScreen(navController) }
                 composable(Screen.Profile.route) { ProfileScreen(navController) }
 
                 // Authentication
@@ -99,8 +100,10 @@ fun NavigationGraph(
                 composable(Screen.HealthConditions.route) { HealthConditionsScreen(navController) }
                 composable(Screen.HealthConnectSetup.route) { HealthConnectScreen(navController) }
 
-                // Navigation
-                composable(Screen.Macros.route) { MacrosScreen(navController) }
+                // Health
+                composable(Screen.RecommendationDetails.route) { RecommendationDetailsScreen(navController) }
+
+                // Nutrition
                 composable(Screen.FoodDetails.route) { FoodDetailsScreen(navController) }
                 composable(Screen.FoodSearch.route) { FoodSearchScreen(navController) }
             }

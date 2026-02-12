@@ -9,6 +9,9 @@ import com.tu.health.data.remote.request.HrvRequest
 import com.tu.health.data.remote.request.SleepRequest
 import javax.inject.Inject
 import com.tu.health.data.remote.api.HealthAPI
+import com.tu.health.data.remote.dto.HealthScoreDTO
+import com.tu.health.data.remote.dto.RecommendationsResponseDTO
+import com.tu.health.data.remote.request.RecommendationsRequest
 
 class HealthRepository @Inject constructor(
     private val api: HealthAPI
@@ -48,4 +51,23 @@ class HealthRepository @Inject constructor(
 
         return safeCall { api.createHealthSnapshot(request = request) }
     }
+
+    suspend fun getHealthScore(): Result<HealthScoreDTO> =
+        safeCall { api.getHealthScore() }
+
+    suspend fun getRecommendations(): Result<RecommendationsResponseDTO> =
+        safeCall { api.getRecommendations() }
+
+
+    suspend fun updateRecommendation(
+        id: Int,
+        status: String
+    ): Result<RecommendationsResponseDTO> {
+        val request = RecommendationsRequest(
+            status = status,
+        )
+
+        return safeCall { api.updateRecommendation(id, request) }
+    }
+
 }
