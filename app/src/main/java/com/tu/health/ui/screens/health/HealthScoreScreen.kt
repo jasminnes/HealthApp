@@ -27,7 +27,7 @@ import com.tu.health.ui.components.RecommendationFilters
 import com.tu.health.ui.components.RecommendationsHeader
 import com.tu.health.ui.components.ScoreRing
 import com.tu.health.viewmodels.health.HealthScoreUi
-import com.tu.health.viewmodels.health.HomeUiEvent
+import com.tu.health.viewmodels.health.HealthUiEvent
 import com.tu.health.viewmodels.health.HealthScoreViewModel
 import com.tu.health.viewmodels.health.RecommendationStatus
 import kotlinx.coroutines.flow.collectLatest
@@ -63,7 +63,7 @@ fun HealthScoreScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { e ->
             when (e) {
-                is HomeUiEvent.ShowMessage ->
+                is HealthUiEvent.ShowMessage ->
                     Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
             }
         }

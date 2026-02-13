@@ -20,8 +20,8 @@ class MacrosViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(MacrosUiState())
     val uiState: StateFlow<MacrosUiState> = _uiState.asStateFlow()
 
-    private val _events = Channel<NutritionUiEvent>(Channel.BUFFERED)
-    val events: Flow<NutritionUiEvent> = _events.receiveAsFlow()
+    private val _events = Channel<MacrosUiEvent>(Channel.BUFFERED)
+    val events: Flow<MacrosUiEvent> = _events.receiveAsFlow()
 
     fun onSearchQueryChange(value: String) = _uiState.update { it.copy(searchQuery = value) }
     fun onSelectedIdChange(value: Int?) = _uiState.update { it.copy(selectedId = value) }
@@ -168,6 +168,6 @@ class MacrosViewModel @Inject constructor(
     private fun setLoading(value: Boolean) = _uiState.update { it.copy(isLoading = value) }
 
     private suspend fun emitMessage(message: String) {
-        _events.send(NutritionUiEvent.ShowMessage(message))
+        _events.send(MacrosUiEvent.ShowMessage(message))
     }
 }

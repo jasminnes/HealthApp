@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
 import com.tu.health.data.remote.dto.TrackedFoodDTO
 import com.tu.health.viewmodels.nutrition.MacrosViewModel
-import com.tu.health.viewmodels.nutrition.NutritionUiEvent
+import com.tu.health.viewmodels.nutrition.MacrosUiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +46,7 @@ fun MacrosScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
-                is NutritionUiEvent.ShowMessage -> {
+                is MacrosUiEvent.ShowMessage -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
             }

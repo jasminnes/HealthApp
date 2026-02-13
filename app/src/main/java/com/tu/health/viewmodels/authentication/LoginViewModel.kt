@@ -11,12 +11,12 @@ import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
-class AuthViewModel @Inject constructor(
+class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AuthUiState())
-    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(LoginUiState())
+    val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<AuthUiEvent>(Channel.BUFFERED)
     val events: Flow<AuthUiEvent> = _events.receiveAsFlow()
@@ -53,17 +53,8 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             setLoading(true)
             authRepository.logout()
-            _uiState.value = AuthUiState()
+            _uiState.value = LoginUiState()
             onComplete()
-        }
-    }
-
-    fun getUser() {
-        viewModelScope.launch {
-            setLoading(true)
-            authRepository.getUser()
-                .onFailure { emitMessage(it.localizedMessage ?: "Failed to load user") }
-            setLoading(false)
         }
     }
 
@@ -93,7 +84,7 @@ class AuthViewModel @Inject constructor(
             setLoading(true)
             authRepository.delete()
                 .onSuccess {
-                    _uiState.value = AuthUiState()
+                    _uiState.value = LoginUiState()
                     emitMessage("Account deleted")
                     onSuccess()
                 }

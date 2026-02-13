@@ -20,7 +20,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.data.remote.dto.BodyMeasurementDTO
 import com.tu.health.ui.components.ConfirmationDialog
-import com.tu.health.viewmodels.profile.BodyMeasurementsViewModel
+import com.tu.health.viewmodels.profile.bodyMeasurements.BodyMeasurementsViewModel
 import com.tu.health.viewmodels.profile.ProfileUiEvent
 import kotlinx.coroutines.flow.collectLatest
 

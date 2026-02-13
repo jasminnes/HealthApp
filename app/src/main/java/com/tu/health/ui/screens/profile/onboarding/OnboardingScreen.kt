@@ -9,8 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.tu.health.viewmodels.profile.OnboardingStep
-import com.tu.health.viewmodels.profile.OnboardingViewModel
+import com.tu.health.viewmodels.profile.onboarding.OnboardingStep
+import com.tu.health.viewmodels.profile.onboarding.OnboardingViewModel
 
 @Composable
 fun OnboardingScreen(

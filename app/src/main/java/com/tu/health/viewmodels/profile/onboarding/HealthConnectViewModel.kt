@@ -1,4 +1,4 @@
-package com.tu.health.viewmodels.profile
+package com.tu.health.viewmodels.profile.onboarding
 
 import android.content.Context
 import androidx.lifecycle.ViewModel

@@ -1,7 +1,6 @@
 package com.tu.health.ui.navigation
 
 sealed class Screen(val route: String) {
-    object Profile : Screen("profile")
 
     // Authentication Module
     object Authentication : Screen("authentication")
@@ -9,6 +8,7 @@ sealed class Screen(val route: String) {
     object LogIn : Screen("login")
 
     // Profile Module
+    object Profile : Screen("profile")
     object ChangePassword : Screen("change-password")
     object Onboarding : Screen("onboarding")
     object BodyMeasurements : Screen("measurements")
@@ -17,9 +17,14 @@ sealed class Screen(val route: String) {
     object HealthConnectSetup : Screen("health-connect-setup")
 
     // Nutrition
-    object HealthScore : Screen("health-score")
-    object RecommendationDetails : Screen("recommendation-details")
     object Macros : Screen("macros")
     object FoodDetails : Screen("food-details/{id}")
     object FoodSearch : Screen("food-search")
+
+    // Health
+    object HealthScore : Screen("health-score")
+    object RecommendationDetails : Screen("recommendation-details")
+
+    // Insights
+    object InsightsSummary : Screen("insights-summary")
 }

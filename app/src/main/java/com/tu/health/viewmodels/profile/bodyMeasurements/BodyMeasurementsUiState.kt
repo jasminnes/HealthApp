@@ -1,4 +1,4 @@
-package com.tu.health.viewmodels.profile
+package com.tu.health.viewmodels.profile.bodyMeasurements
 
 import com.tu.health.data.remote.dto.BodyMeasurementDTO
 

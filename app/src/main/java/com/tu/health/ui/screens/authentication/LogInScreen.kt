@@ -17,12 +17,12 @@ import androidx.navigation.NavController
 import com.tu.health.R
 import com.tu.health.ui.navigation.Screen
 import com.tu.health.viewmodels.authentication.AuthUiEvent
-import com.tu.health.viewmodels.authentication.AuthViewModel
+import com.tu.health.viewmodels.authentication.LoginViewModel
 
 @Composable
 fun LogInScreen(
     navController: NavController,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: LoginViewModel = hiltViewModel()
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
     val keyboardController = LocalSoftwareKeyboardController.current

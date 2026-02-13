@@ -40,12 +40,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.R
-import com.tu.health.viewmodels.authentication.AuthViewModel
+import com.tu.health.viewmodels.authentication.LoginViewModel
 
 @Composable
 fun ChangePasswordScreen(
     navController: NavController,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: LoginViewModel = hiltViewModel()
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
     val keyboardController = LocalSoftwareKeyboardController.current

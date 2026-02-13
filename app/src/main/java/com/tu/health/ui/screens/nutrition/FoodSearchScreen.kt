@@ -20,7 +20,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.data.remote.dto.SearchedFoodDTO
 import com.tu.health.viewmodels.nutrition.MacrosViewModel
-import com.tu.health.viewmodels.nutrition.NutritionUiEvent
+import com.tu.health.viewmodels.nutrition.MacrosUiEvent
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
 
@@ -39,7 +39,7 @@ fun FoodSearchScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
-                is NutritionUiEvent.ShowMessage ->
+                is MacrosUiEvent.ShowMessage ->
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
             }
         }

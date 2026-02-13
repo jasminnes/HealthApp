@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.tu.health.viewmodels.health.HomeUiEvent
+import com.tu.health.viewmodels.health.HealthUiEvent
 import com.tu.health.viewmodels.health.HealthScoreViewModel
 import com.tu.health.viewmodels.health.RecommendationStatus
 import kotlinx.coroutines.flow.collectLatest
@@ -40,7 +40,7 @@ fun RecommendationDetailsScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { e ->
             when (e) {
-                is HomeUiEvent.ShowMessage ->
+                is HealthUiEvent.ShowMessage ->
                     Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
             }
         }

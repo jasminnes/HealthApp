@@ -1,4 +1,4 @@
-package com.tu.health.viewmodels.profile
+package com.tu.health.viewmodels.profile.onboarding
 
 import com.tu.health.data.remote.dto.ActivityDTO
 import com.tu.health.data.remote.dto.ConditionDTO

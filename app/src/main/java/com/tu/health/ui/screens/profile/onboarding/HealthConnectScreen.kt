@@ -18,8 +18,8 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.data.healthconnect.HealthReadPermissions
-import com.tu.health.viewmodels.profile.HcUiState
-import com.tu.health.viewmodels.profile.HealthConnectViewModel
+import com.tu.health.viewmodels.profile.onboarding.HcUiState
+import com.tu.health.viewmodels.profile.onboarding.HealthConnectViewModel
 
 @Composable
 fun HealthConnectScreen(

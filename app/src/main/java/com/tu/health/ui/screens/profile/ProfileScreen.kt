@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.ui.components.ConfirmationDialog
-import com.tu.health.viewmodels.authentication.AuthViewModel
+import com.tu.health.viewmodels.authentication.LoginViewModel
 import com.tu.health.viewmodels.profile.ProfileUiEvent
 import com.tu.health.viewmodels.profile.ProfileViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    authViewModel: AuthViewModel = hiltViewModel(),
+    authViewModel: LoginViewModel = hiltViewModel(),
     profileViewModel: ProfileViewModel = hiltViewModel(),
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }

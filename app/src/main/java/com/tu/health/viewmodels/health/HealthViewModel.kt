@@ -17,8 +17,8 @@ class HealthScoreViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val _events = Channel<HomeUiEvent>(Channel.BUFFERED)
-    val events: Flow<HomeUiEvent> = _events.receiveAsFlow()
+    private val _events = Channel<HealthUiEvent>(Channel.BUFFERED)
+    val events: Flow<HealthUiEvent> = _events.receiveAsFlow()
 
     fun loadHome() {
         viewModelScope.launch {
@@ -124,6 +124,6 @@ class HealthScoreViewModel @Inject constructor(
     }
 
     private suspend fun emitMessage(message: String) {
-        _events.send(HomeUiEvent.ShowMessage(message))
+        _events.send(HealthUiEvent.ShowMessage(message))
     }
 }

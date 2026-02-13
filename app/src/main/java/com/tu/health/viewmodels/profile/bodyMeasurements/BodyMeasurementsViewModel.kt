@@ -1,8 +1,9 @@
-package com.tu.health.viewmodels.profile
+package com.tu.health.viewmodels.profile.bodyMeasurements
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tu.health.data.repository.ProfileRepository
+import com.tu.health.viewmodels.profile.ProfileUiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
