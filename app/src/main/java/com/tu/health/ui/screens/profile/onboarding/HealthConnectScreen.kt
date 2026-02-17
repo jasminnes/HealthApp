@@ -31,7 +31,7 @@ fun HealthConnectScreen(
 
     LaunchedEffect(state) {
         if (state is HcUiState.Ready) {
-            navController.navigate("profile") {
+            navController.navigate("health-score") {
                 popUpTo("health-connect-setup") { inclusive = true }
                 launchSingleTop = true
             }
@@ -61,7 +61,7 @@ fun HealthConnectScreen(
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = {
-                    navController.navigate("profile") {
+                    navController.navigate("health-score") {
                         popUpTo("health-connect-setup") { inclusive = true }
                         launchSingleTop = true
                     }
@@ -83,7 +83,7 @@ fun HealthConnectScreen(
                 Spacer(Modifier.width(12.dp))
                 OutlinedButton(
                     onClick = {
-                        navController.navigate("profile") {
+                        navController.navigate("health-score") {
                             popUpTo("health-connect-setup") { inclusive = true }
                             launchSingleTop = true
                         }
@@ -122,7 +122,7 @@ fun HealthConnectScreen(
 
                 TextButton(
                     onClick = {
-                        navController.navigate("profile") {
+                        navController.navigate("health-score") {
                             popUpTo("health-connect-setup") { inclusive = true }
                             launchSingleTop = true
                         }
@@ -186,7 +186,7 @@ fun HealthConnectScreen(
                 Spacer(Modifier.width(12.dp))
                 OutlinedButton(
                     onClick = {
-                        navController.navigate("profile") {
+                        navController.navigate("health-score") {
                             popUpTo("health-connect-setup") { inclusive = true }
                             launchSingleTop = true
                         }
