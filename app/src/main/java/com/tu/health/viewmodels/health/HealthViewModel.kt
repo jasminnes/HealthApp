@@ -3,6 +3,7 @@ package com.tu.health.viewmodels.health
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tu.health.data.repository.HealthRepository
+import com.tu.health.data.repository.HealthSyncRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -11,7 +12,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HealthScoreViewModel @Inject constructor(
-    private val healthRepository: HealthRepository
+    private val healthRepository: HealthRepository,
+    private val healthSyncRepository: HealthSyncRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -57,6 +59,12 @@ class HealthScoreViewModel @Inject constructor(
                 }
 
             setLoading(false)
+        }
+    }
+
+    fun syncHealthOncePerDay() {
+        viewModelScope.launch {
+            healthSyncRepository.syncYesterdayOncePerDay()
         }
     }
 

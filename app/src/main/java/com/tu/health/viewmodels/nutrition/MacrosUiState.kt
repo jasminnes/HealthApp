@@ -9,10 +9,10 @@ data class DailyUiSummary(
     val proteinConsumed: Float,
     val carbsConsumed: Float,
     val fatConsumed: Float,
-    val caloriesTarget: Float,
-    val proteinTarget: Float,
-    val carbsTarget: Float,
-    val fatTarget: Float,
+    val caloriesTarget: Float?,
+    val proteinTarget: Float?,
+    val carbsTarget: Float?,
+    val fatTarget: Float?,
 )
 
 data class MacrosUiState(

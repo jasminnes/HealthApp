@@ -23,11 +23,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
+import com.tu.health.data.remote.dto.TrackedFoodDTO
+import com.tu.health.viewmodels.nutrition.MacrosUiEvent
+import com.tu.health.viewmodels.nutrition.MacrosViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
-import com.tu.health.data.remote.dto.TrackedFoodDTO
-import com.tu.health.viewmodels.nutrition.MacrosViewModel
-import com.tu.health.viewmodels.nutrition.MacrosUiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,15 +40,10 @@ fun MacrosScreen(
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        viewModel.syncHealthOncePerDay()
-    }
-
-    LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
-                is MacrosUiEvent.ShowMessage -> {
+                is MacrosUiEvent.ShowMessage ->
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-                }
             }
         }
     }
@@ -64,11 +59,10 @@ fun MacrosScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val dailyMacros = state.dailySummary
-    val trackedFoods = state.trackedFoods
+    val daily = state.dailySummary
+    val foods = state.trackedFoods
     val isLoading = state.isLoading
 
-    // --- everything below stays the same UI ---
     Scaffold(
         topBar = {
             TopAppBar(
@@ -88,39 +82,36 @@ fun MacrosScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(start = 16.dp, top = 5.dp, end = 16.dp)
+                .padding(start = 16.dp, top = 6.dp, end = 16.dp)
         ) {
             when {
-                isLoading && dailyMacros == null -> LoadingState()
-                dailyMacros == null -> EmptyState(onRetry = {
+                isLoading && daily == null -> LoadingState()
+                daily == null -> EmptyState(onRetry = {
                     viewModel.getMacroPlan()
                     viewModel.getTodayFood()
                 })
                 else -> DailyMacrosContent(
-                    caloriesConsumed = dailyMacros.caloriesConsumed,
-                    caloriesTarget = dailyMacros.caloriesTarget,
-                    proteinConsumed = dailyMacros.proteinConsumed,
-                    proteinTarget = dailyMacros.proteinTarget,
-                    carbsConsumed = dailyMacros.carbsConsumed,
-                    carbsTarget = dailyMacros.carbsTarget,
-                    fatConsumed = dailyMacros.fatConsumed,
-                    fatTarget = dailyMacros.fatTarget,
-                    trackedFoods = trackedFoods,
+                    caloriesConsumed = daily.caloriesConsumed,
+                    caloriesTarget = daily.caloriesTarget,
+                    proteinConsumed = daily.proteinConsumed,
+                    proteinTarget = daily.proteinTarget,
+                    carbsConsumed = daily.carbsConsumed,
+                    carbsTarget = daily.carbsTarget,
+                    fatConsumed = daily.fatConsumed,
+                    fatTarget = daily.fatTarget,
+                    trackedFoods = foods,
                     viewModel = viewModel,
                     navController = navController
                 )
             }
 
-            if (isLoading && dailyMacros != null) {
+            if (isLoading && daily != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = 8.dp)
                 ) {
-                    CircularProgressIndicator(
-                        strokeWidth = 3.dp,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    CircularProgressIndicator(strokeWidth = 3.dp, modifier = Modifier.size(24.dp))
                 }
             }
         }
@@ -130,13 +121,13 @@ fun MacrosScreen(
 @Composable
 private fun DailyMacrosContent(
     caloriesConsumed: Float,
-    caloriesTarget: Float,
+    caloriesTarget: Float?,
     proteinConsumed: Float,
-    proteinTarget: Float,
+    proteinTarget: Float?,
     carbsConsumed: Float,
-    carbsTarget: Float,
+    carbsTarget: Float?,
     fatConsumed: Float,
-    fatTarget: Float,
+    fatTarget: Float?,
     trackedFoods: List<TrackedFoodDTO>,
     viewModel: MacrosViewModel,
     navController: NavController,
@@ -148,14 +139,9 @@ private fun DailyMacrosContent(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
 
-    CaloriesCard(
-            consumed = caloriesConsumed,
-            target = caloriesTarget,
-        )
+        CaloriesCard(consumed = caloriesConsumed, target = caloriesTarget)
 
-        ElevatedCard(
-            shape = RoundedCornerShape(18.dp)
-        ) {
+        ElevatedCard(shape = RoundedCornerShape(18.dp)) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -166,21 +152,9 @@ private fun DailyMacrosContent(
                     fontWeight = FontWeight.SemiBold
                 )
 
-                MacroRow(
-                    label = "Protein",
-                    consumed = proteinConsumed,
-                    target = proteinTarget
-                )
-                MacroRow(
-                    label = "Carbs",
-                    consumed = carbsConsumed,
-                    target = carbsTarget
-                )
-                MacroRow(
-                    label = "Fat",
-                    consumed = fatConsumed,
-                    target = fatTarget
-                )
+                MacroRow(label = "Protein", consumed = proteinConsumed, target = proteinTarget)
+                MacroRow(label = "Carbs", consumed = carbsConsumed, target = carbsTarget)
+                MacroRow(label = "Fat", consumed = fatConsumed, target = fatTarget)
             }
         }
 
@@ -193,25 +167,29 @@ private fun DailyMacrosContent(
             carbsTarget = carbsTarget
         )
 
-        TrackedFoodsCard(foods = trackedFoods, viewModel = viewModel, navController = navController)
+        TrackedFoodsCard(
+            foods = trackedFoods,
+            viewModel = viewModel,
+            navController = navController
+        )
+
+        Spacer(Modifier.height(12.dp))
     }
 }
 
 @Composable
 private fun CaloriesCard(
     consumed: Float,
-    target: Float,
+    target: Float?,
 ) {
-    val progressRaw = if (target <= 0f) 0f else (consumed / target)
-    val progress = progressRaw.coerceIn(0f, 1f)
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress,
-        label = "calProgress"
-    )
+    val hasTarget = (target ?: 0f) > 0f
 
-    ElevatedCard(
-        shape = RoundedCornerShape(22.dp)
-    ) {
+    val progressRaw = if (hasTarget) consumed / target!! else 0f
+    val progress = progressRaw.coerceIn(0f, 1f)
+
+    val animatedProgress by animateFloatAsState(targetValue = progress, label = "calProgress")
+
+    ElevatedCard(shape = RoundedCornerShape(22.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -249,12 +227,15 @@ private fun CaloriesCard(
                 )
                 Spacer(Modifier.height(6.dp))
 
-                val targetText = if (target > 0f)
-                    "${target.roundToInt()} kcal target" else "No target set"
+                val subtitle = if (hasTarget) {
+                    val pct = (progress * 100f).roundToInt()
+                    "${target!!.roundToInt()} kcal target • $pct%"
+                } else {
+                    "No target set"
+                }
+
                 Text(
-                    text = "$targetText • ${((progressRaw * 100f)
-                        .coerceAtLeast(0f))
-                        .roundToInt()}%",
+                    text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -271,22 +252,17 @@ private fun CaloriesCard(
 
                 Spacer(Modifier.height(10.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    AssistChip(
-                        onClick = { },
-                        label = {
-                            val left = (target - consumed).roundToInt()
-                            Text(
-                                if (target <= 0f) "Set target"
-                            else if (left >= 0) "$left kcal left"
-                            else "${-left} over"
-                            )
+                AssistChip(
+                    onClick = {  },
+                    label = {
+                        if (!hasTarget) {
+                            Text("Set target")
+                        } else {
+                            val left = (target!! - consumed).roundToInt()
+                            Text(if (left >= 0) "$left kcal left" else "${-left} over")
                         }
-                    )
-                }
+                    }
+                )
             }
         }
     }
@@ -296,14 +272,12 @@ private fun CaloriesCard(
 private fun MacroRow(
     label: String,
     consumed: Float,
-    target: Float
+    target: Float?
 ) {
-    val progressRaw = if (target <= 0f) 0f else (consumed / target)
-    val progress = progressRaw.coerceIn(0f, 1f)
-    val animated by animateFloatAsState(
-        targetValue = progress,
-        label = "${label}Progress"
-    )
+    val hasTarget = (target ?: 0f) > 0f
+
+    val progress = if (hasTarget) (consumed / target!!).coerceIn(0f, 1f) else 0f
+    val animated by animateFloatAsState(targetValue = progress, label = "${label}Progress")
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
@@ -316,11 +290,13 @@ private fun MacroRow(
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f)
             )
-            val right = if (target > 0f) {
-                "${consumed.pretty1()} / ${target.pretty1()} g"
+
+            val right = if (hasTarget) {
+                "${consumed.pretty1()} / ${target!!.pretty1()} g"
             } else {
-                "${consumed.pretty1()} g"
+                "${consumed.pretty1()} g • no target"
             }
+
             Text(
                 text = right,
                 style = MaterialTheme.typography.bodyMedium,
@@ -341,22 +317,38 @@ private fun MacroRow(
 @Composable
 private fun TipsCard(
     caloriesConsumed: Float,
-    caloriesTarget: Float,
+    caloriesTarget: Float?,
     proteinConsumed: Float,
-    proteinTarget: Float,
+    proteinTarget: Float?,
     carbsConsumed: Float,
-    carbsTarget: Float
+    carbsTarget: Float?
 ) {
+    val hasAnyTarget =
+        (caloriesTarget ?: 0f) > 0f ||
+                (proteinTarget ?: 0f) > 0f ||
+                (carbsTarget ?: 0f) > 0f
+
     val msg = when {
-        proteinConsumed <= proteinTarget / 2 -> "You need to eat more protein today."
-        caloriesConsumed <= caloriesTarget -> "You’re on track. Keep building consistency."
-        carbsConsumed > carbsTarget -> "You're above carbs target. Try being more active today."
-        else -> "You’re above target today. If you want: lighter dinner + extra steps can balance it."
+        !hasAnyTarget ->
+            "Set your macro targets to unlock better insights and progress tracking."
+
+        proteinTarget != null && proteinTarget > 0f && proteinConsumed <= proteinTarget / 2f ->
+            "You need to eat more protein today."
+
+        caloriesTarget != null && caloriesTarget > 0f && caloriesConsumed <= caloriesTarget ->
+            "You’re on track. Keep building consistency."
+
+        carbsTarget != null && carbsTarget > 0f && carbsConsumed > carbsTarget ->
+            "You're above carbs target. Try being more active today."
+
+        else ->
+            "Nice work staying consistent. Small tweaks today can improve tomorrow."
     }
 
     Card(
         shape = RoundedCornerShape(18.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier
@@ -369,10 +361,7 @@ private fun TipsCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(4.dp))
-            Text(
-                text = msg,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text(text = msg, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -386,19 +375,19 @@ private fun TrackedFoodsCard(
 ) {
     ElevatedCard(
         shape = RoundedCornerShape(18.dp),
-        modifier = modifier.fillMaxWidth().padding(bottom = 15.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 15.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column {
-                Text(
-                    text = "Today foods",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            Text(
+                text = "Today foods",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
 
             if (foods.isEmpty()) {
                 Text(
@@ -416,7 +405,6 @@ private fun TrackedFoodsCard(
                                 navController.navigate("food-details/${f.id}")
                             }
                         )
-
                     }
                 }
             }
@@ -485,9 +473,7 @@ private fun EmptyState(onRetry: () -> Unit) {
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(6.dp))
-        Text(
-            "Pull to refresh or try again.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Pull to refresh or try again.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(14.dp))
         Button(onClick = onRetry) { Text("Retry") }
     }

@@ -22,9 +22,6 @@ interface NutritionAPI {
         @Query("q") query: String
     ) : List<SearchedFoodDTO>
 
-    @GET("nutrition/track-food/")
-    suspend fun getAllTrackedFood() : List<TrackedFoodDTO>
-
     @GET("nutrition/track-food/today/")
     suspend fun getTodayTrackedFood() : List<TrackedFoodDTO>
 
