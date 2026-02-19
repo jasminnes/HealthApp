@@ -124,7 +124,7 @@ fun LogInScreen(
                         keyboardController?.hide()
                         viewModel.login(
                             onSuccess = {
-                                navController.navigate("profile") {
+                                navController.navigate("health-score") {
                                     popUpTo("login") { inclusive = true }
                                 }
                             }

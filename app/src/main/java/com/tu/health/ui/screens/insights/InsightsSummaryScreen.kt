@@ -100,37 +100,37 @@ fun InsightsSummaryScreen(
                     item {
                         BodyCompositionSection(
                             data = state.data!!,
-                            onOpenDetails = { navController.navigate("insights_details/body_composition") }
+                            onOpenDetails = { navController.navigate("insights-body_composition") }
                         )
                     }
                     item {
                         NutritionSection(
                             data = state.data!!,
-                            onOpenDetails = { navController.navigate("insights_details/nutrition") }
+                            onOpenDetails = { navController.navigate("insights-nutrition") }
                         )
                     }
                     item {
                         MetabolicSection(
                             data = state.data!!,
-                            onOpenDetails = { navController.navigate("insights_details/metabolic") }
+                            onOpenDetails = { navController.navigate("insights-metabolic") }
                         )
                     }
                     item {
                         HealthConnectSection(
                             data = state.data!!,
-                            onOpenDetails = { navController.navigate("insights_details/health_connect") }
+                            onOpenDetails = { navController.navigate("insights-health_connect") }
                         )
                     }
                     item {
                         ScoresSection(
                             data = state.data!!,
-                            onOpenDetails = { navController.navigate("insights_details/scores") }
+                            onOpenDetails = { navController.navigate("insights-scores") }
                         )
                     }
                     item {
                         RecommendationsSection(
                             data = state.data!!,
-                            onOpenDetails = { navController.navigate("insights_details/recommendations") }
+                            onOpenDetails = { navController.navigate("insights-recommendations") }
                         )
                     }
                 }

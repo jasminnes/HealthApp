@@ -71,6 +71,11 @@ dependencies {
     // HealthConnect
     implementation(libs.androidx.connect.client)
 
+    // Vico (graphics)
+    implementation(libs.vico.compose.m3)
+    implementation(libs.vico.core)
+    implementation("co.yml:ycharts:2.1.0")
+
     // Navigation
     implementation(libs.androidx.navigation.compose)
 
