@@ -1,4 +1,4 @@
-package com.tu.health.ui.screens.insights.nutrition
+package com.tu.health.ui.screens.insights.scores
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,8 +9,6 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -18,36 +16,27 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.ui.components.ErrorBanner
 import com.tu.health.ui.components.LoadingOverlay
-import com.tu.health.viewmodels.insights.nutrition.NutritionDetailsEvent
-import com.tu.health.viewmodels.insights.nutrition.NutritionDetailsViewModel
+import com.tu.health.viewmodels.insights.scores.HealthScoresDetailsEvent
+import com.tu.health.viewmodels.insights.scores.HealthScoresDetailsViewModel
 
 private val DaysOptions = listOf(7, 30, 90, 365)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NutritionDetailsScreen(
+fun HealthScoresDetailsScreen(
     navController: NavController,
-    vm: NutritionDetailsViewModel = hiltViewModel()
+    vm: HealthScoresDetailsViewModel = hiltViewModel()
 ) {
     val state by vm.uiState.collectAsState()
-
     var menuOpen by remember { mutableStateOf(false) }
-    var metric by rememberSaveable { mutableStateOf(MacroMetric.CALORIES) }
 
-    LaunchedEffect(Unit) { vm.onEvent(NutritionDetailsEvent.Load) }
-
-    val data = state.data
-    val hasEnergy = remember(data) {
-        if (data == null) false
-        else data.points.any { it.rmr != null || it.tdee != null } ||
-                (data.summary.latestRmr != null || data.summary.latestTdee != null)
-    }
+    LaunchedEffect(Unit) { vm.onEvent(HealthScoresDetailsEvent.Load) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Nutrition", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = { Text("Health scores", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.background
@@ -68,14 +57,14 @@ fun NutritionDetailsScreen(
                                 text = { Text("$d days") },
                                 onClick = {
                                     menuOpen = false
-                                    vm.onEvent(NutritionDetailsEvent.ChangeDays(d))
+                                    vm.onEvent(HealthScoresDetailsEvent.ChangeDays(d))
                                 }
                             )
                         }
                     }
 
                     IconButton(
-                        onClick = { vm.onEvent(NutritionDetailsEvent.Refresh) },
+                        onClick = { vm.onEvent(HealthScoresDetailsEvent.Refresh) },
                         enabled = !state.isLoading
                     ) {
                         Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
@@ -84,8 +73,11 @@ fun NutritionDetailsScreen(
             )
         }
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -93,62 +85,28 @@ fun NutritionDetailsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (state.errorMessage != null) {
+                state.errorMessage?.let { msg ->
                     ErrorBanner(
-                        message = state.errorMessage.orEmpty(),
-                        onDismiss = { vm.onEvent(NutritionDetailsEvent.ClearError) }
+                        message = msg,
+                        onDismiss = { vm.onEvent(HealthScoresDetailsEvent.ClearError) }
                     )
                 }
 
+                val data = state.data
                 if (data == null) {
                     ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
                         Column(Modifier.padding(16.dp)) {
                             Text("No data yet", style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                "Track some meals to see calories and macro trends here.",
+                                "Once you have daily snapshots, your health scores will appear here.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 } else {
-                    if (metric == MacroMetric.CALORIES) {
-                        ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text("Energy overlay", style = MaterialTheme.typography.titleSmall)
-                                    Text(
-                                        "Show RMR & TDEE on calories chart",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Switch(
-                                    checked = state.showEnergyOverlay,
-                                    onCheckedChange = { vm.onEvent(NutritionDetailsEvent.ToggleEnergyOverlay(it)) },
-                                    enabled = hasEnergy
-                                )
-                            }
-                        }
-                    }
-
-                    NutritionMacrosChartCard(
-                        data = data,
-                        metric = metric,
-                        onMetricChange = { metric = it },
-                        showEnergyOverlay = state.showEnergyOverlay
-                    )
-
-                    NutritionSummaryCard(
-                        data = data,
-                        metric = metric
-                    )
+                    HealthScoresChartCard(data = data)
+                    HealthScoresSummaryCard(data = data)
                 }
 
                 Spacer(Modifier.height(24.dp))

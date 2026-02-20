@@ -20,7 +20,10 @@ import com.tu.health.ui.screens.authentication.SignUpScreen
 import com.tu.health.ui.screens.health.HealthScoreScreen
 import com.tu.health.ui.screens.health.RecommendationDetailsScreen
 import com.tu.health.ui.screens.insights.InsightsSummaryScreen
+import com.tu.health.ui.screens.insights.bodycomposition.BodyCompositionDetailsScreen
+import com.tu.health.ui.screens.insights.healthconnect.HealthConnectDetailsScreen
 import com.tu.health.ui.screens.insights.nutrition.NutritionDetailsScreen
+import com.tu.health.ui.screens.insights.scores.HealthScoresDetailsScreen
 import com.tu.health.ui.screens.profile.onboarding.HealthConnectScreen
 import com.tu.health.ui.screens.nutrition.FoodDetailsScreen
 import com.tu.health.ui.screens.nutrition.FoodSearchScreen
@@ -112,6 +115,9 @@ fun NavigationGraph(
                 // Insights
                 composable(Screen.InsightsSummary.route) { InsightsSummaryScreen(navController) }
                 composable(Screen.InsightsNutrition.route) { NutritionDetailsScreen(navController) }
+                composable(Screen.InsightsHealthConnect.route) { HealthConnectDetailsScreen(navController) }
+                composable(Screen.InsightsBodyComposition.route) { BodyCompositionDetailsScreen(navController) }
+                composable(Screen.InsightsScores.route) { HealthScoresDetailsScreen(navController) }
             }
         }
     }

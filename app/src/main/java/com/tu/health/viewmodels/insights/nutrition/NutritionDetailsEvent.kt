@@ -5,4 +5,6 @@ sealed interface NutritionDetailsEvent {
     data object Refresh : NutritionDetailsEvent
     data class ChangeDays(val days: Int) : NutritionDetailsEvent
     data object ClearError : NutritionDetailsEvent
+
+    data class ToggleEnergyOverlay(val enabled: Boolean) : NutritionDetailsEvent
 }

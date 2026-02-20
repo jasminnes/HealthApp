@@ -28,4 +28,8 @@ sealed class Screen(val route: String) {
     // Insights
     object InsightsSummary : Screen("insights-summary")
     object InsightsNutrition : Screen("insights-nutrition")
+    object InsightsHealthConnect : Screen("insights-healthconnect")
+    object InsightsBodyComposition : Screen("insights-bodycomposition")
+    object InsightsScores : Screen("insights-scores")
+    object InsightsRecommendations : Screen("insights-recommendations")
 }

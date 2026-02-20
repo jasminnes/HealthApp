@@ -1,4 +1,4 @@
-package com.tu.health.viewmodels.insights.nutrition
+package com.tu.health.viewmodels.insights.healthconnect
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,39 +11,41 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class NutritionDetailsViewModel @Inject constructor(
+class HealthConnectDetailsViewModel @Inject constructor(
     private val repo: InsightsRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(NutritionDetailsUiState())
-    val uiState: StateFlow<NutritionDetailsUiState> = _uiState
+    private val _uiState = MutableStateFlow(HealthConnectDetailsUiState())
+    val uiState: StateFlow<HealthConnectDetailsUiState> = _uiState
 
-    fun onEvent(e: NutritionDetailsEvent) {
+    fun onEvent(e: HealthConnectDetailsEvent) {
         when (e) {
-            NutritionDetailsEvent.Load -> load()
-            NutritionDetailsEvent.Refresh -> load()
-            is NutritionDetailsEvent.ChangeDays -> {
+            HealthConnectDetailsEvent.Load -> load()
+            HealthConnectDetailsEvent.Refresh -> load()
+
+            is HealthConnectDetailsEvent.ChangeDays -> {
                 _uiState.update { it.copy(selectedDays = e.days) }
                 load()
             }
-            NutritionDetailsEvent.ClearError ->
+
+            HealthConnectDetailsEvent.ClearError ->
                 _uiState.update { it.copy(errorMessage = null) }
-            is NutritionDetailsEvent.ToggleEnergyOverlay ->
-                _uiState.update { it.copy(showEnergyOverlay = e.enabled) }
         }
     }
 
     private fun load() {
         val days = _uiState.value.selectedDays
+
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
-            val res = repo.getNutrition(days)
+            val result = repo.getHealthConnect(days)
+
             _uiState.update { s ->
                 s.copy(
                     isLoading = false,
-                    errorMessage = res.exceptionOrNull()?.message,
-                    data = res.getOrNull()
+                    errorMessage = result.exceptionOrNull()?.message,
+                    data = result.getOrNull()
                 )
             }
         }

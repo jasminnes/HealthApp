@@ -30,9 +30,22 @@ import com.tu.health.viewmodels.insights.summary.InsightsSummaryEvent
 import com.tu.health.viewmodels.insights.summary.InsightsSummaryViewModel
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.ui.graphics.Color
 
 
 private val DaysOptions = listOf(7, 30, 90, 365)
+
+@Composable
+private fun sectionColor(key: String): Color {
+    return when (key) {
+        "body" -> MaterialTheme.colorScheme.primaryContainer
+        "nutrition" -> MaterialTheme.colorScheme.secondary
+        "hc" -> MaterialTheme.colorScheme.tertiary
+        "scores" -> MaterialTheme.colorScheme.tertiaryContainer
+        else -> MaterialTheme.colorScheme.primary
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,7 +113,7 @@ fun InsightsSummaryScreen(
                     item {
                         BodyCompositionSection(
                             data = state.data!!,
-                            onOpenDetails = { navController.navigate("insights-body_composition") }
+                            onOpenDetails = { navController.navigate("insights-bodycomposition") }
                         )
                     }
                     item {
@@ -110,27 +123,15 @@ fun InsightsSummaryScreen(
                         )
                     }
                     item {
-                        MetabolicSection(
-                            data = state.data!!,
-                            onOpenDetails = { navController.navigate("insights-metabolic") }
-                        )
-                    }
-                    item {
                         HealthConnectSection(
                             data = state.data!!,
-                            onOpenDetails = { navController.navigate("insights-health_connect") }
+                            onOpenDetails = { navController.navigate("insights-healthconnect") }
                         )
                     }
                     item {
                         ScoresSection(
                             data = state.data!!,
                             onOpenDetails = { navController.navigate("insights-scores") }
-                        )
-                    }
-                    item {
-                        RecommendationsSection(
-                            data = state.data!!,
-                            onOpenDetails = { navController.navigate("insights-recommendations") }
                         )
                     }
                 }
@@ -203,21 +204,25 @@ private fun InsightsTopBar(
 
 @Composable
 private fun HeaderSummary(days: Int, rangeText: String?) {
+    val fg = MaterialTheme.colorScheme.onPrimaryContainer
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(24.dp),
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
                 text = "Your snapshot",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleLarge,
+                color = fg
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = rangeText ?: "Showing last $days days",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = fg.copy(alpha = 0.85f)
             )
+
             Spacer(Modifier.height(12.dp))
 
             Row(
@@ -228,15 +233,27 @@ private fun HeaderSummary(days: Int, rangeText: String?) {
             ) {
                 AssistChip(
                     onClick = { },
-                    label = { Text("Quick view") }
+                    label = { Text("Quick view", color = fg) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
+                        labelColor = fg
+                    )
                 )
                 AssistChip(
                     onClick = { },
-                    label = { Text("Trends") }
+                    label = { Text("Trends", color = fg) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
+                        labelColor = fg
+                    )
                 )
                 AssistChip(
                     onClick = { },
-                    label = { Text("Consistency") }
+                    label = { Text("Consistency", color = fg) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
+                        labelColor = fg
+                    )
                 )
             }
         }
@@ -252,8 +269,9 @@ private fun BodyCompositionSection(
     SectionCard(
         title = "Body composition",
         subtitle = "RMR (Resting Metabolic Rate) • TDEE (Total Daily Energy Expenditure)",
-        onOpenDetails = onOpenDetails
-    ) {
+        onOpenDetails = onOpenDetails,
+        accent = sectionColor("body"),
+        ) {
         val latest = data.bodyComposition.summary.latest
 
         MetricRow(
@@ -262,7 +280,8 @@ private fun BodyCompositionSection(
                 MetricItem("Waist", latest?.waist?.let { "${trim2(it)} cm" } ?: "—"),
                 MetricItem("Body Fat Percentage", latest?.bfp?.let { "${trim2(it)} %" } ?: "—"),
                 MetricItem("Lean Body Mass", latest?.lbm?.let { "${trim2(it)} kg" } ?: "—"),
-            )
+            ),
+            accent = sectionColor("body")
         )
 
         Spacer(Modifier.height(10.dp))
@@ -274,7 +293,8 @@ private fun BodyCompositionSection(
                         "Wa ${it.waist?.let(::trim2) ?: "—"} • " +
                         "BFP ${it.bfp?.let(::trim2) ?: "—"} • " +
                         "LBM ${it.lbm?.let(::trim2) ?: "—"}"
-            }
+            },
+            accent = sectionColor("body")
         )
     }
 }
@@ -284,9 +304,12 @@ private fun NutritionSection(
     data: InsightsSummaryDTO,
     onOpenDetails: () -> Unit
 ) {
+    val accent = sectionColor("nutrition")
+
     SectionCard(
         title = "Nutrition",
         subtitle = "Consumed vs plan",
+        accent = accent,
         onOpenDetails = onOpenDetails
     ) {
         val s = data.nutrition.summary
@@ -298,7 +321,8 @@ private fun NutritionSection(
                 MetricItem("Plan kcal", plan?.calories?.toString() ?: "—"),
                 MetricItem("Avg protein", "${trim2(s.avgProtein ?: 0.0)} g"),
                 MetricItem("Avg carbs", "${trim2(s.avgCarbs ?: 0.0)} g"),
-            )
+            ),
+            accent = accent
         )
 
         Spacer(Modifier.height(10.dp))
@@ -306,43 +330,9 @@ private fun NutritionSection(
         PointsChips(
             title = "Latest days",
             points = data.nutrition.points.map {
-                "${it.date}: ${trim2(it.calories)} kcal • " +
-                        "P ${trim2(it.protein)} • C ${trim2(it.carbs)} • F ${trim2(it.fat)}"
-            }
-        )
-    }
-}
-
-@Composable
-private fun MetabolicSection(
-    data: InsightsSummaryDTO,
-    onOpenDetails: () -> Unit
-) {
-    SectionCard(
-        title = "Metabolic",
-        subtitle = "RMR • TDEE • Activity level",
-        onOpenDetails = onOpenDetails
-    ) {
-        val s = data.metabolic.summary
-
-        MetricRow(
-            items = listOf(
-                MetricItem("RMR", s.latestRmr?.let(::trim2) ?: "—"),
-                MetricItem("TDEE", s.latestTdee?.let(::trim2) ?: "—"),
-                MetricItem("Activity Level", s.currentActivityLevel ?: "—"),
-                MetricItem("Last change", s.lastChange?.let { "${it.from}→${it.to}" } ?: "—"),
-            )
-        )
-
-        Spacer(Modifier.height(10.dp))
-
-        PointsChips(
-            title = "Latest snapshots",
-            points = data.metabolic.points.map {
-                "${it.date}: RMR ${it.rmr?.let(::trim2) ?: "—"} • " +
-                        "TDEE ${it.tdee?.let(::trim2) ?: "—"} • " +
-                        (it.activityLevel ?: "—")
-            }
+                "${it.date}: ${trim2(it.calories)} kcal • P ${trim2(it.protein)} • C ${trim2(it.carbs)}"
+            },
+            accent = accent
         )
     }
 }
@@ -355,8 +345,9 @@ private fun HealthConnectSection(
     SectionCard(
         title = "Activity & recovery",
         subtitle = "Steps • Sleep • Workouts",
-        onOpenDetails = onOpenDetails
-    ) {
+        onOpenDetails = onOpenDetails,
+        accent = sectionColor("hc"),
+        ) {
         val s = data.healthConnect.summary
 
         MetricRow(
@@ -365,7 +356,9 @@ private fun HealthConnectSection(
                 MetricItem("Avg sleep", "${trim2(s.avgSleepMinutes ?: 0.0)} min"),
                 MetricItem("Avg exercise", "${trim2(s.avgExerciseMinutes ?: 0.0)} min"),
                 MetricItem("Avg workouts", trim2(s.avgWorkouts ?: 0.0)),
-            )
+            ),
+            accent = sectionColor("hc")
+
         )
 
         Spacer(Modifier.height(10.dp))
@@ -375,7 +368,8 @@ private fun HealthConnectSection(
             points = data.healthConnect.points.map {
                 "${it.date}: ${it.steps ?: 0} steps • " +
                         "sleep ${it.sleepMin ?: 0}m • "
-            }
+            },
+            accent = sectionColor("hc")
         )
     }
 }
@@ -388,7 +382,8 @@ private fun ScoresSection(
     SectionCard(
         title = "Health score",
         subtitle = "Total + subscores",
-        onOpenDetails = onOpenDetails
+        onOpenDetails = onOpenDetails,
+        accent = sectionColor("scores"),
     ) {
         val latest = data.scores.summary.latest
 
@@ -400,7 +395,8 @@ private fun ScoresSection(
                 MetricItem("Nutrition", latest?.nutrition?.let(::trim2) ?: "—"),
                 MetricItem("Body Composition", latest?.bodyComposition?.let(::trim2) ?: "—"),
                 MetricItem("Recovery", latest?.recovery?.let(::trim2) ?: "—"),
-            )
+            ),
+            accent = sectionColor("scores")
         )
 
         Spacer(Modifier.height(10.dp))
@@ -409,42 +405,9 @@ private fun ScoresSection(
             title = "Latest scores",
             points = data.scores.points.map {
                 "${it.date}: total ${it.total?.let(::trim2) ?: "—"}"
-            }
+            },
+            accent = sectionColor("scores")
         )
-    }
-}
-
-@Composable
-private fun RecommendationsSection(
-    data: InsightsSummaryDTO,
-    onOpenDetails: () -> Unit
-) {
-    SectionCard(
-        title = "Recommendations",
-        subtitle = "Completion rate",
-        onOpenDetails = onOpenDetails
-    ) {
-        val s = data.recommendations.summary
-
-        MetricRow(
-            items = listOf(
-                MetricItem("Completed", s.completed.toString()),
-                MetricItem("New", s.new.toString()),
-                MetricItem("Dismissed", s.dismissed.toString()),
-                MetricItem("Rate", "${trim2(s.completionRate * 100)}%"),
-            )
-        )
-
-        if (data.recommendations.points.isNotEmpty()) {
-            Spacer(Modifier.height(10.dp))
-            PointsChips(
-                title = "Latest periods",
-                points = data.recommendations.points.map {
-                    "${it.periodStart}: ${trim2(it.completionRate * 100)}% " +
-                            "(${it.completedCount} done / ${it.newCount} new)"
-                }
-            )
-        }
     }
 }
 
@@ -452,6 +415,7 @@ private fun RecommendationsSection(
 private fun SectionCard(
     title: String,
     subtitle: String,
+    accent: Color,
     onOpenDetails: () -> Unit,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -460,21 +424,42 @@ private fun SectionCard(
         shape = RoundedCornerShape(22.dp),
         onClick = onOpenDetails
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+        Row(Modifier.fillMaxWidth()) {
+
+            Box(
+                modifier = Modifier
+                    .width(6.dp)
+                    .fillMaxHeight()
+                    .padding(vertical = 14.dp)
+            ) {
+                Surface(
+                    color = accent,
+                    shape = RoundedCornerShape(99.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {}
+            }
+
+            Column(Modifier.padding(16.dp).weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(title, style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            subtitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        Icons.Filled.ChevronRight,
+                        contentDescription = null,
+                        tint = accent
                     )
                 }
-                Icon(Icons.Filled.ChevronRight, contentDescription = null)
+
+                Spacer(Modifier.height(12.dp))
+                content()
             }
-            Spacer(Modifier.height(12.dp))
-            content()
         }
     }
 }
@@ -482,31 +467,17 @@ private fun SectionCard(
 data class MetricItem(val label: String, val value: String)
 
 @Composable
-private fun MetricRow(items: List<MetricItem>) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        items.chunked(2).forEach { rowItems ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                MetricTile(rowItems.getOrNull(0))
-                MetricTile(rowItems.getOrNull(1))
+private fun MetricTile(
+    item: MetricItem?,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    val container = accent.copy(alpha = 0.12f)
 
-                // keep grid aligned if odd count
-                if (rowItems.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun RowScope.MetricTile(item: MetricItem?) {
-    ElevatedCard(
-        modifier = Modifier.weight(1f),
-        shape = RoundedCornerShape(18.dp)
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = container)
     ) {
         Column(Modifier.padding(12.dp)) {
             Text(
@@ -527,8 +498,37 @@ private fun RowScope.MetricTile(item: MetricItem?) {
     }
 }
 
+
 @Composable
-private fun PointsChips(title: String, points: List<String>) {
+private fun MetricRow(items: List<MetricItem>, accent: Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        items.chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                MetricTile(
+                    item = rowItems.getOrNull(0),
+                    accent = accent,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 64.dp)
+                )
+
+                MetricTile(
+                    item = rowItems.getOrNull(1),
+                    accent = accent,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 64.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PointsChips(title: String, points: List<String>, accent: Color) {
     Column {
         Text(
             text = title,
@@ -536,6 +536,7 @@ private fun PointsChips(title: String, points: List<String>) {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(8.dp))
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -544,14 +545,17 @@ private fun PointsChips(title: String, points: List<String>) {
         ) {
             points.takeLast(4).forEach { line ->
                 AssistChip(
-                    onClick = { /* later: open details at that date */ },
+                    onClick = { },
                     label = {
                         Text(
                             text = line,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                    }
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = accent.copy(alpha = 0.14f)
+                    )
                 )
             }
         }

@@ -1,4 +1,4 @@
-package com.tu.health.viewmodels.insights.nutrition
+package com.tu.health.viewmodels.insights.scores
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,25 +11,25 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class NutritionDetailsViewModel @Inject constructor(
+class HealthScoresDetailsViewModel @Inject constructor(
     private val repo: InsightsRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(NutritionDetailsUiState())
-    val uiState: StateFlow<NutritionDetailsUiState> = _uiState
+    private val _uiState = MutableStateFlow(HealthScoresDetailsUiState())
+    val uiState: StateFlow<HealthScoresDetailsUiState> = _uiState
 
-    fun onEvent(e: NutritionDetailsEvent) {
+    fun onEvent(e: HealthScoresDetailsEvent) {
         when (e) {
-            NutritionDetailsEvent.Load -> load()
-            NutritionDetailsEvent.Refresh -> load()
-            is NutritionDetailsEvent.ChangeDays -> {
+            HealthScoresDetailsEvent.Load -> load()
+            HealthScoresDetailsEvent.Refresh -> load()
+
+            is HealthScoresDetailsEvent.ChangeDays -> {
                 _uiState.update { it.copy(selectedDays = e.days) }
                 load()
             }
-            NutritionDetailsEvent.ClearError ->
+
+            HealthScoresDetailsEvent.ClearError ->
                 _uiState.update { it.copy(errorMessage = null) }
-            is NutritionDetailsEvent.ToggleEnergyOverlay ->
-                _uiState.update { it.copy(showEnergyOverlay = e.enabled) }
         }
     }
 
@@ -38,7 +38,7 @@ class NutritionDetailsViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
-            val res = repo.getNutrition(days)
+            val res = repo.getScore(days)
             _uiState.update { s ->
                 s.copy(
                     isLoading = false,

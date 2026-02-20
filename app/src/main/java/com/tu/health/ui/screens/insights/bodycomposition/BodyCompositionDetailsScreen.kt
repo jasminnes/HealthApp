@@ -1,4 +1,4 @@
-package com.tu.health.ui.screens.insights.nutrition
+package com.tu.health.ui.screens.insights.bodycomposition
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,7 +10,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -18,36 +17,29 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.tu.health.ui.components.ErrorBanner
 import com.tu.health.ui.components.LoadingOverlay
-import com.tu.health.viewmodels.insights.nutrition.NutritionDetailsEvent
-import com.tu.health.viewmodels.insights.nutrition.NutritionDetailsViewModel
+import com.tu.health.viewmodels.insights.bodycomposition.BodyCompositionDetailsEvent
+import com.tu.health.viewmodels.insights.bodycomposition.BodyCompositionDetailsViewModel
 
-private val DaysOptions = listOf(7, 30, 90, 365)
+private val DaysOptions = listOf(30, 90, 180, 365)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NutritionDetailsScreen(
+fun BodyCompositionDetailsScreen(
     navController: NavController,
-    vm: NutritionDetailsViewModel = hiltViewModel()
+    vm: BodyCompositionDetailsViewModel = hiltViewModel()
 ) {
     val state by vm.uiState.collectAsState()
-
     var menuOpen by remember { mutableStateOf(false) }
-    var metric by rememberSaveable { mutableStateOf(MacroMetric.CALORIES) }
 
-    LaunchedEffect(Unit) { vm.onEvent(NutritionDetailsEvent.Load) }
+    var metric by rememberSaveable { mutableStateOf(BodyMetric.COMBINED) }
 
-    val data = state.data
-    val hasEnergy = remember(data) {
-        if (data == null) false
-        else data.points.any { it.rmr != null || it.tdee != null } ||
-                (data.summary.latestRmr != null || data.summary.latestTdee != null)
-    }
+    LaunchedEffect(Unit) { vm.onEvent(BodyCompositionDetailsEvent.Load) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Nutrition", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = { Text("Body composition", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.background
@@ -62,20 +54,23 @@ fun NutritionDetailsScreen(
                         Icon(Icons.Filled.CalendarToday, contentDescription = "Select days")
                     }
 
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenu(
+                        expanded = menuOpen,
+                        onDismissRequest = { menuOpen = false }
+                    ) {
                         DaysOptions.forEach { d ->
                             DropdownMenuItem(
                                 text = { Text("$d days") },
                                 onClick = {
                                     menuOpen = false
-                                    vm.onEvent(NutritionDetailsEvent.ChangeDays(d))
+                                    vm.onEvent(BodyCompositionDetailsEvent.ChangeDays(d))
                                 }
                             )
                         }
                     }
 
                     IconButton(
-                        onClick = { vm.onEvent(NutritionDetailsEvent.Refresh) },
+                        onClick = { vm.onEvent(BodyCompositionDetailsEvent.Refresh) },
                         enabled = !state.isLoading
                     ) {
                         Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
@@ -84,8 +79,11 @@ fun NutritionDetailsScreen(
             )
         }
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -93,62 +91,33 @@ fun NutritionDetailsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (state.errorMessage != null) {
+                state.errorMessage?.let { msg ->
                     ErrorBanner(
-                        message = state.errorMessage.orEmpty(),
-                        onDismiss = { vm.onEvent(NutritionDetailsEvent.ClearError) }
+                        message = msg,
+                        onDismiss = { vm.onEvent(BodyCompositionDetailsEvent.ClearError) }
                     )
                 }
 
+                val data = state.data
                 if (data == null) {
                     ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
                         Column(Modifier.padding(16.dp)) {
                             Text("No data yet", style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                "Track some meals to see calories and macro trends here.",
+                                "Add weight/waist measurements (and metabolic snapshots) to see trends here.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 } else {
-                    if (metric == MacroMetric.CALORIES) {
-                        ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text("Energy overlay", style = MaterialTheme.typography.titleSmall)
-                                    Text(
-                                        "Show RMR & TDEE on calories chart",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Switch(
-                                    checked = state.showEnergyOverlay,
-                                    onCheckedChange = { vm.onEvent(NutritionDetailsEvent.ToggleEnergyOverlay(it)) },
-                                    enabled = hasEnergy
-                                )
-                            }
-                        }
-                    }
-
-                    NutritionMacrosChartCard(
+                    BodyCompositionChartCard(
                         data = data,
                         metric = metric,
-                        onMetricChange = { metric = it },
-                        showEnergyOverlay = state.showEnergyOverlay
+                        onMetricChange = { metric = it }
                     )
 
-                    NutritionSummaryCard(
-                        data = data,
-                        metric = metric
-                    )
+                    BodyCompositionSummaryCard(data = data)
                 }
 
                 Spacer(Modifier.height(24.dp))
