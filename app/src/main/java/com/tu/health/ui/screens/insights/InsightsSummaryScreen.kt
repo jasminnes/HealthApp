@@ -35,17 +35,15 @@ import androidx.compose.ui.graphics.Color
 
 private val DaysOptions = listOf(7, 30, 90, 365)
 
-@Composable
-private fun sectionColor(key: String): Color {
-    return when (key) {
-        "body" -> MaterialTheme.colorScheme.primaryContainer
-        "nutrition" -> MaterialTheme.colorScheme.secondary
-        "hc" -> MaterialTheme.colorScheme.tertiary
-        "scores" -> MaterialTheme.colorScheme.tertiaryContainer
-        else -> MaterialTheme.colorScheme.primary
-    }
-}
+private enum class SummarySection { BODY, NUTRITION, HC, SCORES }
 
+@Composable
+private fun sectionColor(section: SummarySection): Color = when (section) {
+    SummarySection.BODY -> MaterialTheme.colorScheme.primaryContainer
+    SummarySection.NUTRITION -> MaterialTheme.colorScheme.secondary
+    SummarySection.HC -> MaterialTheme.colorScheme.tertiary
+    SummarySection.SCORES -> MaterialTheme.colorScheme.tertiaryContainer
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -260,41 +258,28 @@ private fun HeaderSummary(days: Int, rangeText: String?) {
     }
 }
 
-
 @Composable
 private fun BodyCompositionSection(
     data: InsightsSummaryDTO,
     onOpenDetails: () -> Unit
 ) {
+    val accent = sectionColor(SummarySection.BODY)
+    val s = data.bodyComposition
+
     SectionCard(
         title = "Body composition",
-        subtitle = "RMR (Resting Metabolic Rate) • TDEE (Total Daily Energy Expenditure)",
+        subtitle = "Averages for selected period",
         onOpenDetails = onOpenDetails,
-        accent = sectionColor("body"),
-        ) {
-        val latest = data.bodyComposition.summary.latest
-
+        accent = accent
+    ) {
         MetricRow(
             items = listOf(
-                MetricItem("Weight", latest?.weight?.let { "${trim2(it)} kg" } ?: "—"),
-                MetricItem("Waist", latest?.waist?.let { "${trim2(it)} cm" } ?: "—"),
-                MetricItem("Body Fat Percentage", latest?.bfp?.let { "${trim2(it)} %" } ?: "—"),
-                MetricItem("Lean Body Mass", latest?.lbm?.let { "${trim2(it)} kg" } ?: "—"),
+                MetricItem("Avg weight", s.avgWeight?.let { "${trim2(it)} kg" } ?: "—"),
+                MetricItem("Avg waist", s.avgWaist?.let { "${trim2(it)} cm" } ?: "—"),
+                MetricItem("Avg body fat", s.avgBfp?.let { "${trim2(it)} %" } ?: "—"),
+                MetricItem("Avg lean mass", s.avgLbm?.let { "${trim2(it)} kg" } ?: "—"),
             ),
-            accent = sectionColor("body")
-        )
-
-        Spacer(Modifier.height(10.dp))
-
-        PointsChips(
-            title = "Latest points",
-            points = data.bodyComposition.points.map {
-                "${it.date}: W ${it.weight?.let(::trim2) ?: "—"} • " +
-                        "Wa ${it.waist?.let(::trim2) ?: "—"} • " +
-                        "BFP ${it.bfp?.let(::trim2) ?: "—"} • " +
-                        "LBM ${it.lbm?.let(::trim2) ?: "—"}"
-            },
-            accent = sectionColor("body")
+            accent = accent
         )
     }
 }
@@ -304,34 +289,23 @@ private fun NutritionSection(
     data: InsightsSummaryDTO,
     onOpenDetails: () -> Unit
 ) {
-    val accent = sectionColor("nutrition")
+    val accent = sectionColor(SummarySection.NUTRITION)
+    val s = data.nutrition
+    val plan = s.plan
 
     SectionCard(
         title = "Nutrition",
-        subtitle = "Consumed vs plan",
+        subtitle = "Averages vs plan",
         accent = accent,
         onOpenDetails = onOpenDetails
     ) {
-        val s = data.nutrition.summary
-        val plan = s.plan
-
         MetricRow(
             items = listOf(
-                MetricItem("Avg kcal", trim2(s.avgCalories ?: 0.0)),
-                MetricItem("Plan kcal", plan?.calories?.toString() ?: "—"),
-                MetricItem("Avg protein", "${trim2(s.avgProtein ?: 0.0)} g"),
-                MetricItem("Avg carbs", "${trim2(s.avgCarbs ?: 0.0)} g"),
+                MetricItem("Avg kcal", s.avgCalories?.let(::trim2) ?: "—"),
+                MetricItem("Plan kcal", plan?.calories?.let { trim2(it.toDouble()) } ?: "—"),
+                MetricItem("Avg protein", s.avgProtein?.let { "${trim2(it)} g" } ?: "—"),
+                MetricItem("Avg carbs", s.avgCarbs?.let { "${trim2(it)} g" } ?: "—"),
             ),
-            accent = accent
-        )
-
-        Spacer(Modifier.height(10.dp))
-
-        PointsChips(
-            title = "Latest days",
-            points = data.nutrition.points.map {
-                "${it.date}: ${trim2(it.calories)} kcal • P ${trim2(it.protein)} • C ${trim2(it.carbs)}"
-            },
             accent = accent
         )
     }
@@ -342,34 +316,23 @@ private fun HealthConnectSection(
     data: InsightsSummaryDTO,
     onOpenDetails: () -> Unit
 ) {
+    val accent = sectionColor(SummarySection.HC)
+    val s = data.healthConnect
+
     SectionCard(
         title = "Activity & recovery",
-        subtitle = "Steps • Sleep • Workouts",
+        subtitle = "Averages for selected period",
         onOpenDetails = onOpenDetails,
-        accent = sectionColor("hc"),
-        ) {
-        val s = data.healthConnect.summary
-
+        accent = accent
+    ) {
         MetricRow(
             items = listOf(
-                MetricItem("Avg steps", trim2(s.avgSteps ?: 0.0)),
-                MetricItem("Avg sleep", "${trim2(s.avgSleepMinutes ?: 0.0)} min"),
-                MetricItem("Avg exercise", "${trim2(s.avgExerciseMinutes ?: 0.0)} min"),
-                MetricItem("Avg workouts", trim2(s.avgWorkouts ?: 0.0)),
+                MetricItem("Avg steps", s.avgSteps?.let(::trim2) ?: "—"),
+                MetricItem("Avg sleep", s.avgSleepMinutes?.let { "${trim2(it)} min" } ?: "—"),
+                MetricItem("Avg exercise", s.avgExerciseMinutes?.let { "${trim2(it)} min" } ?: "—"),
+                MetricItem("Avg workouts", s.avgWorkouts?.let(::trim2) ?: "—"),
             ),
-            accent = sectionColor("hc")
-
-        )
-
-        Spacer(Modifier.height(10.dp))
-
-        PointsChips(
-            title = "Latest days",
-            points = data.healthConnect.points.map {
-                "${it.date}: ${it.steps ?: 0} steps • " +
-                        "sleep ${it.sleepMin ?: 0}m • "
-            },
-            accent = sectionColor("hc")
+            accent = accent
         )
     }
 }
@@ -379,34 +342,24 @@ private fun ScoresSection(
     data: InsightsSummaryDTO,
     onOpenDetails: () -> Unit
 ) {
+    val accent = sectionColor(SummarySection.SCORES)
+    val avg = data.scores
+
     SectionCard(
         title = "Health score",
-        subtitle = "Total + subscores",
+        subtitle = "Average scores for selected period",
         onOpenDetails = onOpenDetails,
-        accent = sectionColor("scores"),
+        accent = accent
     ) {
-        val latest = data.scores.summary.latest
-
         MetricRow(
             items = listOf(
-                MetricItem("Latest", latest?.total?.let(::trim2) ?: "—"),
-                MetricItem("Avg", trim2(data.scores.summary.avgTotal ?: 0.0)),
-                MetricItem("Activity", latest?.activity?.let(::trim2) ?: "—"),
-                MetricItem("Nutrition", latest?.nutrition?.let(::trim2) ?: "—"),
-                MetricItem("Body Composition", latest?.bodyComposition?.let(::trim2) ?: "—"),
-                MetricItem("Recovery", latest?.recovery?.let(::trim2) ?: "—"),
+                MetricItem("Avg total", avg.total?.let(::trim2) ?: "—"),
+                MetricItem("Avg activity", avg.activity?.let(::trim2) ?: "—"),
+                MetricItem("Avg recovery", avg.recovery?.let(::trim2) ?: "—"),
+                MetricItem("Avg nutrition", avg.nutrition?.let(::trim2) ?: "—"),
+                MetricItem("Avg body comp", avg.bodyComposition?.let(::trim2) ?: "—"),
             ),
-            accent = sectionColor("scores")
-        )
-
-        Spacer(Modifier.height(10.dp))
-
-        PointsChips(
-            title = "Latest scores",
-            points = data.scores.points.map {
-                "${it.date}: total ${it.total?.let(::trim2) ?: "—"}"
-            },
-            accent = sectionColor("scores")
+            accent = accent
         )
     }
 }
@@ -468,7 +421,7 @@ data class MetricItem(val label: String, val value: String)
 
 @Composable
 private fun MetricTile(
-    item: MetricItem?,
+    item: MetricItem,
     accent: Color,
     modifier: Modifier = Modifier
 ) {
@@ -481,7 +434,7 @@ private fun MetricTile(
     ) {
         Column(Modifier.padding(12.dp)) {
             Text(
-                text = item?.label ?: "",
+                text = item.label,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -489,7 +442,7 @@ private fun MetricTile(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = item?.value ?: "—",
+                text = item.value,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -507,56 +460,14 @@ private fun MetricRow(items: List<MetricItem>, accent: Color) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                MetricTile(
-                    item = rowItems.getOrNull(0),
-                    accent = accent,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 64.dp)
-                )
-
-                MetricTile(
-                    item = rowItems.getOrNull(1),
-                    accent = accent,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 64.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PointsChips(title: String, points: List<String>, accent: Color) {
-    Column {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            points.takeLast(4).forEach { line ->
-                AssistChip(
-                    onClick = { },
-                    label = {
-                        Text(
-                            text = line,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = accent.copy(alpha = 0.14f)
+                rowItems.forEach { item ->
+                    MetricTile(
+                        item = item,
+                        accent = accent,
+                        modifier = Modifier.weight(1f).heightIn(min = 64.dp)
                     )
-                )
+                }
+                if (rowItems.size == 1) Spacer(Modifier.weight(1f))
             }
         }
     }

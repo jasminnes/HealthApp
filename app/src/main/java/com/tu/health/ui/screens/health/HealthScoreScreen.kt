@@ -208,11 +208,6 @@ private fun HealthScoreCard(score: HealthScoreUi) {
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Text(
-                        score.requestedDate.takeIf { it.isNotBlank() } ?: "Today",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
                 if (score.isStale) AssistChip(onClick = {}, label = { Text("Stale") })
             }

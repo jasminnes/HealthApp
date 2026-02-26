@@ -1,5 +1,6 @@
 package com.tu.health.ui.screens.health
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +23,7 @@ import com.tu.health.viewmodels.health.HealthScoreViewModel
 import com.tu.health.viewmodels.health.RecommendationStatus
 import kotlinx.coroutines.flow.collectLatest
 
+@SuppressLint("UnrememberedGetBackStackEntry")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecommendationDetailsScreen(
@@ -36,7 +38,6 @@ fun RecommendationDetailsScreen(
     val rec = state.selectedRecommendation
     val context = LocalContext.current
 
-    // Toast messages
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { e ->
             when (e) {
@@ -116,7 +117,7 @@ fun RecommendationDetailsScreen(
                     }
 
                     Text(
-                        "${rec.category} • ${rec.date}",
+                        rec.category.uppercase(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -199,7 +200,17 @@ fun RecommendationDetailsScreen(
 
 @Composable
 private fun EvidenceCard(evidence: Map<String, Any>) {
-    ElevatedCard(shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+
+    fun formatKey(key: String): String {
+        return key
+            .replace("_", " ")
+            .replaceFirstChar { it.uppercase() }
+    }
+
+    ElevatedCard(
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(
             Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -211,14 +222,20 @@ private fun EvidenceCard(evidence: Map<String, Any>) {
             )
 
             evidence.entries.take(10).forEach { (k, v) ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text(
-                        k,
+                        formatKey(k),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text(v.toString(), fontWeight = FontWeight.Medium)
+                    Text(
+                        v.toString(),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
