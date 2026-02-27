@@ -10,18 +10,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun LegendRow(
-    leftLabel: String,
-    leftColor: Color,
-    rightLabel: String,
-    rightColor: Color
+fun LegendRow4(
+    aLabel: String, aColor: Color,
+    bLabel: String, bColor: Color,
+    cLabel: String, cColor: Color,
+    dLabel: String, dColor: Color
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        LegendItem(label = leftLabel, color = leftColor)
-        LegendItem(label = rightLabel, color = rightColor)
+        LegendItem(aLabel, aColor)
+        LegendItem(bLabel, bColor)
+        LegendItem(cLabel, cColor)
+        LegendItem(dLabel, dColor)
     }
 }

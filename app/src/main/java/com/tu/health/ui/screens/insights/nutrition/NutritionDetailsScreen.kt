@@ -5,13 +5,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -112,29 +117,96 @@ fun NutritionDetailsScreen(
                         }
                     }
                 } else {
-                    if (metric == MacroMetric.CALORIES) {
-                        ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
+                    val overlayAvailableNow = metric == MacroMetric.CALORIES
+                    val canToggleOverlay = hasEnergy && overlayAvailableNow
+
+                    val isOn = state.showEnergyOverlay
+
+                    Card(
+                        shape = MaterialTheme.shapes.extraLarge,
+                        elevation = CardDefaults.cardElevation(0.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isOn)
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.60f)
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp)
+                                .alpha(if (canToggleOverlay) 1f else 0.55f),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.weight(1f),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(Modifier.weight(1f)) {
+                                Surface(
+                                    shape = MaterialTheme.shapes.large,
+                                    color = if (isOn)
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                                    else
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Bolt,
+                                        contentDescription = null,
+                                        modifier = Modifier.padding(8.dp),
+                                        tint = if (isOn) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                Spacer(Modifier.width(12.dp))
+
+                                Column {
                                     Text("Energy overlay", style = MaterialTheme.typography.titleSmall)
+
+                                    val subtitle = when {
+                                        !hasEnergy -> "No RMR/TDEE data available"
+                                        !overlayAvailableNow -> "Available on Calories only"
+                                        else -> "Show RMR & TDEE on calories chart"
+                                    }
+
                                     Text(
-                                        "Show RMR & TDEE on calories chart",
+                                        subtitle,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                                Switch(
-                                    checked = state.showEnergyOverlay,
-                                    onCheckedChange = { vm.onEvent(NutritionDetailsEvent.ToggleEnergyOverlay(it)) },
-                                    enabled = hasEnergy
-                                )
                             }
+
+                            Switch(
+                                checked = isOn,
+                                onCheckedChange = { vm.onEvent(NutritionDetailsEvent.ToggleEnergyOverlay(it)) },
+                                enabled = canToggleOverlay,
+                                thumbContent = {
+                                    Icon(
+                                        imageVector = if (isOn) Icons.Filled.Check else Icons.Filled.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                                        tint = if (isOn) MaterialTheme.colorScheme.onPrimary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                                    checkedBorderColor = Color.Transparent,
+
+                                    uncheckedThumbColor = MaterialTheme.colorScheme.surface,
+                                    uncheckedTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                                    uncheckedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+
+                                    disabledCheckedThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.20f),
+                                    disabledCheckedTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                                    disabledUncheckedThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f),
+                                    disabledUncheckedTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                )
+                            )
                         }
                     }
 

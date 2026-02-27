@@ -31,6 +31,7 @@ import com.tu.health.viewmodels.insights.summary.InsightsSummaryViewModel
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.ui.graphics.Color
+import kotlin.math.roundToInt
 
 
 private val DaysOptions = listOf(7, 30, 90, 365)
@@ -327,9 +328,9 @@ private fun HealthConnectSection(
     ) {
         MetricRow(
             items = listOf(
-                MetricItem("Avg steps", s.avgSteps?.let(::trim2) ?: "—"),
-                MetricItem("Avg sleep", s.avgSleepMinutes?.let { "${trim2(it)} min" } ?: "—"),
-                MetricItem("Avg exercise", s.avgExerciseMinutes?.let { "${trim2(it)} min" } ?: "—"),
+                MetricItem("Avg steps", formatIntOrDash(s.avgSteps)),
+                MetricItem("Avg sleep", formatMinutesAsHrMinOrDash(s.avgSleepMinutes)),
+                MetricItem("Avg exercise", formatMinutesAsHrMinOrDash(s.avgExerciseMinutes)),
                 MetricItem("Avg workouts", s.avgWorkouts?.let(::trim2) ?: "—"),
             ),
             accent = accent
@@ -499,4 +500,24 @@ private fun EmptyStateCard(isLoading: Boolean, onRetry: () -> Unit) {
 private fun trim2(v: Double): String {
     val s = String.format("%.2f", v)
     return s.trimEnd('0').trimEnd('.')
+}
+
+private fun formatMinutesAsHrMin(minutes: Double): String {
+    val total = minutes.roundToInt().coerceAtLeast(0)
+    val h = total / 60
+    val m = total % 60
+
+    return when {
+        h <= 0 -> "${m}m"
+        m == 0 -> "${h}h"
+        else -> "${h}h ${m}m"
+    }
+}
+
+private fun formatMinutesAsHrMinOrDash(minutes: Double?): String {
+    return minutes?.let(::formatMinutesAsHrMin) ?: "—"
+}
+
+private fun formatIntOrDash(value: Double?): String {
+    return value?.roundToInt()?.toString() ?: "—"
 }

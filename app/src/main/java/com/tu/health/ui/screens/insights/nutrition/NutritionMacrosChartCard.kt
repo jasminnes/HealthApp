@@ -1,24 +1,38 @@
 package com.tu.health.ui.screens.insights.nutrition
 
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import co.yml.charts.axis.AxisData
 import co.yml.charts.common.model.Point
 import co.yml.charts.ui.linechart.LineChart
+import co.yml.charts.ui.linechart.model.IntersectionPoint
 import co.yml.charts.ui.linechart.model.Line
 import co.yml.charts.ui.linechart.model.LineChartData
 import co.yml.charts.ui.linechart.model.LinePlotData
 import co.yml.charts.ui.linechart.model.LineStyle
+import co.yml.charts.ui.linechart.model.SelectionHighlightPoint
 import com.tu.health.data.remote.dto.insights.nutrition.NutritionDetailsDTO
-import kotlin.math.ceil
+import com.tu.health.ui.components.LegendRow2
+import com.tu.health.ui.components.LegendRow4
+import com.tu.health.ui.components.MetricTabs
+import com.tu.health.ui.components.computeLabelStep
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
@@ -114,20 +128,51 @@ fun NutritionMacrosChartCard(
                 }
                 .build()
 
-            val consumedColor = Color(0xFFDAE72B)
-            val targetColor = Color(0xFF00FF25)
+            val consumedColor = Color(0xFFDFFF75)
+            val targetColor = Color(0xFF56A6A4)
+            val rmrColor = Color(0xFFD169FF)
+            val tdeeColor = Color(0xFF375CDE)
 
-            val rmrColor = Color(0xFFE8702F)
-            val tdeeColor = Color(0xFFFF2600)
+            val consumedLine = Line(
+                dataPoints = consumedPoints,
+                lineStyle = LineStyle(
+                    color = consumedColor,
+                    width = 3.4f
+                ),
+                intersectionPoint = IntersectionPoint(color = consumedColor, radius = 4.dp),
+                selectionHighlightPoint = SelectionHighlightPoint(color = consumedColor, radius = 6.dp),
+                shadowUnderLine = null,
+                selectionHighlightPopUp = null
+            )
 
             val lines = mutableListOf<Line>()
-            lines += Line(consumedPoints, LineStyle(color = consumedColor))
+            lines += consumedLine
 
-            if (targetPoints.isNotEmpty()) lines += Line(targetPoints, LineStyle(color = targetColor))
-            if (rmrPoints.isNotEmpty()) lines += Line(rmrPoints, LineStyle(color = rmrColor))
-            if (tdeePoints.isNotEmpty()) lines += Line(tdeePoints, LineStyle(color = tdeeColor))
+            if (targetPoints.isNotEmpty()) {
+                lines += Line(
+                    dataPoints = targetPoints,
+                    lineStyle = LineStyle(color = targetColor, width = 2.2f)
+                )
+            }
 
-            lines += Line(scaleLinePoints, LineStyle(color = Color.Transparent))
+            if (rmrPoints.isNotEmpty()) {
+                lines += Line(
+                    dataPoints = rmrPoints,
+                    lineStyle = LineStyle(color = rmrColor, width = 2.2f)
+                )
+            }
+
+            if (tdeePoints.isNotEmpty()) {
+                lines += Line(
+                    dataPoints = tdeePoints,
+                    lineStyle = LineStyle(color = tdeeColor, width = 2.2f)
+                )
+            }
+
+            lines += Line(
+                dataPoints = scaleLinePoints,
+                lineStyle = LineStyle(color = Color.Transparent)
+            )
 
             if (energyEnabled) {
                 LegendRow4(
@@ -145,42 +190,106 @@ fun NutritionMacrosChartCard(
                 )
             }
 
+            var selectedIndex by remember(points.size, metric, showEnergyOverlay) {
+                mutableIntStateOf(points.lastIndex.coerceAtLeast(0))
+            }
+            selectedIndex = selectedIndex.coerceIn(0, points.lastIndex)
+
+            val selected = points[selectedIndex]
+            val selectedConsumed = nutritionMetricValue(metric, selected)
+            val selectedRmr = if (energyEnabled) selected.rmr else null
+            val selectedTdee = if (energyEnabled) selected.tdee else null
+
+            NutritionValuesPanel(
+                selectedDate = selected.date,
+                metric = metric,
+                consumed = selectedConsumed,
+                target = targetVal,
+                showEnergy = energyEnabled,
+                rmr = selectedRmr,
+                tdee = selectedTdee,
+                consumedColor = consumedColor,
+                targetColor = targetColor,
+                rmrColor = rmrColor,
+                tdeeColor = tdeeColor
+            )
+
             val chartData = LineChartData(
                 linePlotData = LinePlotData(lines = lines),
                 xAxisData = xAxisData,
                 yAxisData = yAxisData
             )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(290.dp),
-                contentAlignment = Alignment.TopStart
-            ) {
-                LineChart(modifier = Modifier.fillMaxSize(), lineChartData = chartData)
-            }
+            InteractiveSelectableNutritionChart(
+                chartData = chartData,
+                selectedIndex = selectedIndex,
+                lastIndex = lastIndex.coerceAtLeast(1),
+                referenceSeries = consumedPoints,
+                onSelectIndex = { idx -> selectedIndex = idx.coerceIn(0, points.lastIndex) }
+            )
+        }
+    }
+}
 
-            val latest = points.lastOrNull()
-            if (latest != null) {
-                val latestConsumed = nutritionMetricValue(metric, latest)
-                val subtitle = buildString {
-                    append("Latest: ${nutritionFormatValue(metric, latestConsumed)}")
-                    if (targetVal != null) append(" • Target: ${nutritionFormatValue(metric, targetVal)}")
+@Composable
+private fun InteractiveSelectableNutritionChart(
+    chartData: LineChartData,
+    selectedIndex: Int,
+    lastIndex: Int,
+    referenceSeries: List<Point>,
+    onSelectIndex: (Int) -> Unit
+) {
+    val startInset = 44.dp
+    val endInset = 18.dp
 
-                    if (energyEnabled) {
-                        val rmr = latest.rmr
-                        val tdee = latest.tdee
-                        if (rmr != null) append(" • RMR ${rmr.toInt()}")
-                        if (tdee != null) append(" • TDEE ${tdee.toInt()}")
-                    }
+    val density = LocalDensity.current
+    val startInsetPx = with(density) { startInset.toPx() }
+    val endInsetPx = with(density) { endInset.toPx() }
+
+    var chartSize by remember { mutableStateOf(IntSize.Zero) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(290.dp)
+            .onSizeChanged { chartSize = it }
+            .clipToBounds()
+            .pointerInput(chartSize, lastIndex, startInsetPx, endInsetPx, referenceSeries) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(pass = PointerEventPass.Initial)
+                    if (lastIndex <= 0 || referenceSeries.isEmpty()) return@awaitEachGesture
+
+                    val fullW = chartSize.width.toFloat().coerceAtLeast(1f)
+                    val plotW = (fullW - startInsetPx - endInsetPx).coerceAtLeast(1f)
+
+                    val xInPlot = (down.position.x - startInsetPx).coerceIn(0f, plotW)
+                    val xValue = (xInPlot / plotW) * lastIndex.toFloat()
+
+                    val nearest = referenceSeries.minByOrNull { abs(it.x - xValue) } ?: return@awaitEachGesture
+                    onSelectIndex(nearest.x.roundToInt().coerceIn(0, lastIndex))
                 }
+            },
+        contentAlignment = Alignment.TopStart
+    ) {
+        LineChart(
+            modifier = Modifier.fillMaxSize().clipToBounds(),
+            lineChartData = chartData
+        )
 
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+        if (lastIndex > 0) {
+            val color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+            Canvas(modifier = Modifier.fillMaxSize().clipToBounds()) {
+                val fullW = size.width.coerceAtLeast(1f)
+                val plotW = (fullW - startInsetPx - endInsetPx).coerceAtLeast(1f)
+
+                val xInPlot = (selectedIndex.toFloat() / lastIndex.toFloat()) * plotW
+                val x = startInsetPx + xInPlot
+
+                drawLine(
+                    color = color,
+                    start = Offset(x, 0f),
+                    end = Offset(x, size.height),
+                    strokeWidth = 2f
                 )
             }
         }
@@ -188,65 +297,88 @@ fun NutritionMacrosChartCard(
 }
 
 @Composable
-private fun MetricTabs(selected: MacroMetric, onSelected: (MacroMetric) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+private fun NutritionValuesPanel(
+    selectedDate: String,
+    metric: MacroMetric,
+    consumed: Double,
+    target: Double?,
+    showEnergy: Boolean,
+    rmr: Double?,
+    tdee: Double?,
+    consumedColor: Color,
+    targetColor: Color,
+    rmrColor: Color,
+    tdeeColor: Color
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large
     ) {
-        MacroMetric.entries.forEach { m ->
-            FilterChip(
-                selected = selected == m,
-                onClick = { onSelected(m) },
-                label = { Text(m.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        Column(
+            Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Selected: $selectedDate",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            NutritionValueRow(
+                label = "Consumed",
+                valueText = nutritionFormatValue(metric, consumed),
+                color = consumedColor,
+                emphasized = true
+            )
+
+            NutritionValueRow(
+                label = if (target != null) "Target" else "Target (not set)",
+                valueText = target?.let { nutritionFormatValue(metric, it) } ?: "—",
+                color = targetColor
+            )
+
+            if (showEnergy) {
+                NutritionValueRow(
+                    label = "RMR",
+                    valueText = rmr?.let { nutritionFormatValue(MacroMetric.CALORIES, it) } ?: "—",
+                    color = rmrColor
+                )
+                NutritionValueRow(
+                    label = "TDEE",
+                    valueText = tdee?.let { nutritionFormatValue(MacroMetric.CALORIES, it) } ?: "—",
+                    color = tdeeColor
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun LegendRow2(leftLabel: String, leftColor: Color, rightLabel: String, rightColor: Color) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        LegendItem(leftLabel, leftColor)
-        LegendItem(rightLabel, rightColor)
-    }
-}
-
-@Composable
-private fun LegendRow4(
-    aLabel: String, aColor: Color,
-    bLabel: String, bColor: Color,
-    cLabel: String, cColor: Color,
-    dLabel: String, dColor: Color
+private fun NutritionValueRow(
+    label: String,
+    valueText: String,
+    color: Color,
+    emphasized: Boolean = false
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        LegendItem(aLabel, aColor)
-        LegendItem(bLabel, bColor)
-        LegendItem(cLabel, cColor)
-        LegendItem(dLabel, dColor)
-    }
-}
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            color = color,
+            shape = MaterialTheme.shapes.small,
+            modifier = Modifier.size(if (emphasized) 10.dp else 8.dp)
+        ) {}
+        Spacer(Modifier.width(10.dp))
 
-@Composable
-private fun LegendItem(label: String, color: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Surface(color = color, shape = MaterialTheme.shapes.small, modifier = Modifier.size(10.dp)) {}
-        Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
-}
+        Text(
+            text = label,
+            style = if (emphasized) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
 
-private fun computeLabelStep(size: Int): Int {
-    if (size <= 8) return 1
-    val desired = 7
-    return ceil(size / desired.toFloat()).roundToInt().coerceAtLeast(1)
+        Text(
+            text = valueText,
+            style = if (emphasized) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium
+        )
+    }
 }

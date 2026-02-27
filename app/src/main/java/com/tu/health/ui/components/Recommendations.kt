@@ -104,12 +104,6 @@ fun RecommendationCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-
-            Text(
-                rec.date,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
