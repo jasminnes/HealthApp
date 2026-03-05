@@ -25,8 +25,8 @@ data class ProfileRequest(
 
 data class BodyMeasurementRequest(
     @Json(name = "weight") val weight: Float,
-    @Json(name = "neck") val neck: Float,
-    @Json(name = "waist") val waist: Float,
+    @Json(name = "neck") val neck: Float?,
+    @Json(name = "waist") val waist: Float?,
 )
 
 data class UpdateUserHeightRequest(

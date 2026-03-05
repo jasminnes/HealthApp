@@ -230,51 +230,40 @@ private fun CreateMeasurementDialog(
     var waistText by remember { mutableStateOf("") }
     var neckText by remember { mutableStateOf("") }
 
+    var submitted by remember { mutableStateOf(false) }
+
     val w = weightText.toFloatOrNullSmart()
     val wa = waistText.toFloatOrNullSmart()
     val n = neckText.toFloatOrNullSmart()
 
     val valid = (w != null && w > 0f && w <= 500f) &&
-            (wa != null && wa > 0f && wa <= 300f) &&
-            (n != null && n > 0f && n <= 100f)
+            (wa == null || (wa > 0f && wa <= 300f)) &&
+            (n == null || (n > 0f && n <= 100f))
+
+    val weightValue = weightText.trim().toFloatOrNull()
+    val waistValue = waistText.trim().toFloatOrNull()
+    val neckValue = neckText.trim().toFloatOrNull()
+
+    val weightMissing = weightText.isBlank()
+    val weightInvalid = !weightMissing && weightValue == null
+
+    val waistInvalid = waistText.isNotBlank() && waistValue == null
+    val neckInvalid = neckText.isNotBlank() && neckValue == null
+
+    val canSave = weightValue != null && !waistInvalid && !neckInvalid
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add measurement") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+
                 OutlinedTextField(
                     value = weightText,
                     onValueChange = { weightText = it },
-                    label = { Text("Weight (kg)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-                OutlinedTextField(
-                    value = waistText,
-                    onValueChange = { waistText = it },
-                    label = { Text("Waist (cm)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-                OutlinedTextField(
-                    value = neckText,
-                    onValueChange = { neckText = it },
-                    label = { Text("Neck (cm)") },
+                    label = { Text("Weight (kg) *") },
+                    supportingText = { Text("Required") },
+                    isError = submitted && (!valid && (weightMissing || weightInvalid)),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -286,9 +275,49 @@ private fun CreateMeasurementDialog(
                     )
                 )
 
-                if (!valid && (weightText.isNotBlank() || waistText.isNotBlank() || neckText.isNotBlank())) {
+                OutlinedTextField(
+                    value = waistText,
+                    onValueChange = { waistText = it },
+                    label = { Text("Waist (cm)") },
+                    supportingText = { Text("Optional") },
+                    isError = submitted && (!valid && waistInvalid),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+
+                OutlinedTextField(
+                    value = neckText,
+                    onValueChange = { neckText = it },
+                    label = { Text("Neck (cm)") },
+                    supportingText = { Text("Optional") },
+                    isError = submitted && (!valid && neckInvalid),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+
+                if (submitted && (!valid || !canSave)) {
+                    val message = when {
+                        weightMissing -> "Weight is required."
+                        weightInvalid -> "Weight must be a valid number."
+                        waistInvalid || neckInvalid -> "Optional fields must be valid numbers (or left blank)."
+                        else -> "Please enter valid values."
+                    }
                     Text(
-                        text = "Please enter valid numbers.",
+                        text = message,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -297,12 +326,21 @@ private fun CreateMeasurementDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = valid,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                ),
-                onClick = { onSave(w!!, wa!!, n!!) }
+                enabled = true,
+                onClick = {
+                    submitted = true
+                    if (!valid || !canSave) return@TextButton
+
+                    onSave(
+                        w,
+                        wa ?: 0f,
+                        n ?: 0f
+                    )
+                    onDismiss()
+                },
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.secondary
+                )
             ) { Text("Save") }
         },
         dismissButton = {

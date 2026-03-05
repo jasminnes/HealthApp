@@ -7,6 +7,6 @@ data class BodyMeasurementsUiState(
     val measurements: List<BodyMeasurementDTO> = emptyList(),
 
     val weight: Float = 0f,
-    val waist: Float = 0f,
-    val neck: Float = 0f
+    val waist: Float? = 0f,
+    val neck: Float? = 0f
 )

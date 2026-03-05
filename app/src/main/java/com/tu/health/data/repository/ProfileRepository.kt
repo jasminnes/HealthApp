@@ -82,8 +82,8 @@ class ProfileRepository @Inject constructor(
 
     suspend fun createBodyMeasurement(
         weight: Float,
-        neck: Float,
-        waist: Float
+        neck: Float?,
+        waist: Float?
     ): Result<BodyMeasurementDTO> {
         val request = BodyMeasurementRequest(
             weight = weight,
