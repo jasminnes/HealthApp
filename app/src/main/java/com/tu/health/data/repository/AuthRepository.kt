@@ -10,6 +10,7 @@ import com.tu.health.data.remote.request.ChangePasswordRequest
 import com.tu.health.data.remote.request.LoginRequest
 import com.tu.health.data.remote.request.LogoutRequest
 import com.tu.health.data.remote.request.RegisterRequest
+import com.tu.health.data.remote.request.UpdateAccountRequest
 import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 import retrofit2.HttpException
@@ -92,12 +93,13 @@ class AuthRepository @Inject constructor(
             response
         }
 
-    suspend fun getUser(): Result<AccountDTO> =
+    suspend fun update(firstName: String?, lastName: String?): Result<DetailDTO> =
         safeCall {
-            val response = api.get()
-            profileDataStore.saveFirstName(response.firstName)
-            profileDataStore.saveLastName(response.lastName ?: "")
-            response
+            val request = UpdateAccountRequest(
+                firstName = firstName,
+                lastName = lastName
+            )
+            api.update(request)
         }
 
     suspend fun changePassword(oldPassword: String, newPassword: String): Result<DetailDTO> =

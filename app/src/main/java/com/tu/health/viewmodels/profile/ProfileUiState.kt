@@ -7,6 +7,9 @@ import com.tu.health.data.remote.dto.DietTypeDTO
 data class ProfileUiState(
     val isLoading: Boolean = false,
 
+    val firstName: String = "",
+    val lastName: String = "",
+
     val height: Float = 0f,
     val weightGoal: String = "",
 
@@ -17,4 +20,6 @@ data class ProfileUiState(
     val allDietTypes: List<DietTypeDTO> = emptyList(),
     val allActivityLevels: List<ActivityDTO> = emptyList(),
     val allConditions: List<ConditionDTO> = emptyList(),
+
+    val recommendedDietTypes: List<DietTypeDTO> = emptyList()
 )

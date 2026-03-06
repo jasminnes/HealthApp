@@ -49,6 +49,7 @@ fun ProfileScreen(
     var showGoalDialog by remember { mutableStateOf(false) }
     var showActivityDialog by remember { mutableStateOf(false) }
     var showHeightDialog by remember { mutableStateOf(false) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         profileViewModel.events.collectLatest { event ->
@@ -98,7 +99,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.weight(1f))
 
                     IconButton(
-                        onClick = { navController.navigate("editProfile") },
+                        onClick = { showEditNameDialog = true },
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
@@ -193,6 +194,21 @@ fun ProfileScreen(
                 profileViewModel.onHeightChange(newHeight)
                 profileViewModel.updateUserHeight { success ->
                     if (success) showHeightDialog = false
+                }
+            }
+        )
+    }
+
+    if (showEditNameDialog) {
+        EditNameDialog(
+            currentFirstName = firstName,
+            currentLastName = lastName,
+            onDismiss = { showEditNameDialog = false },
+            onSave = { newFirstName, newLastName ->
+                profileViewModel.onFirstNameChange(newFirstName)
+                profileViewModel.onLastNameChange(newLastName)
+                profileViewModel.updateAccount { success ->
+                    if (success) showEditNameDialog = false
                 }
             }
         )
@@ -428,6 +444,75 @@ private fun HeightDialog(
             ) {
                 Text("Cancel")
             }
+        }
+    )
+}
+
+
+@Composable
+private fun EditNameDialog(
+    currentFirstName: String,
+    currentLastName: String,
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit
+) {
+    var firstName by remember { mutableStateOf(currentFirstName) }
+    var lastName by remember { mutableStateOf(currentLastName) }
+
+    val changed = firstName.trim() != currentFirstName.trim() ||
+            lastName.trim() != currentLastName.trim()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit profile") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = firstName,
+                    onValueChange = { firstName = it },
+                    label = { Text("First name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+
+                OutlinedTextField(
+                    value = lastName,
+                    onValueChange = { lastName = it },
+                    label = { Text("Last name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        cursorColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSave(firstName.trim(), lastName.trim()) },
+                enabled = changed
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) { Text("Cancel") }
         }
     )
 }

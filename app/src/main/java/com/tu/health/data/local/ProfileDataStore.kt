@@ -32,8 +32,21 @@ class ProfileDataStore @Inject constructor(
         .map { prefs -> prefs[LAST_HEALTH_UPLOAD_DAY] }
 
     suspend fun saveEmail(value: String) = dataStore.edit { it[EMAIL] = value }
-    suspend fun saveFirstName(value: String) = dataStore.edit { it[FIRST_NAME] = value }
-    suspend fun saveLastName(value: String) = dataStore.edit { it[LAST_NAME] = value }
+
+    suspend fun saveFirstName(value: String) =
+        dataStore.edit {
+            if (value.isNotBlank()) {
+                it[FIRST_NAME] = value
+            }
+        }
+
+    suspend fun saveLastName(value: String) =
+        dataStore.edit {
+            if (value.isNotBlank()) {
+                it[LAST_NAME] = value
+            }
+        }
+
     suspend fun saveLastHealthUploadDay(value: String) = dataStore.edit { it[LAST_HEALTH_UPLOAD_DAY] = value }
 
     suspend fun clear() = dataStore.edit {

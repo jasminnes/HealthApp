@@ -17,6 +17,11 @@ data class LoginRequest(
     @Json(name = "password") val password: String
 )
 
+data class UpdateAccountRequest(
+    @Json(name = "first_name") val firstName: String?,
+    @Json(name = "last_name") val lastName: String?,
+)
+
 data class ChangePasswordRequest(
     @Json(name = "old_password") val oldPassword: String,
     @Json(name = "new_password") val newPassword: String,

@@ -6,6 +6,7 @@ import com.tu.health.data.local.ProfileDataStore
 import com.tu.health.data.repository.ProfileRepository
 import com.tu.health.data.remote.dto.ActivityDTO
 import com.tu.health.data.remote.dto.DietTypeDTO
+import com.tu.health.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -15,7 +16,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
-    profileDataStore: ProfileDataStore
+    private val authRepository: AuthRepository,
+    private val profileDataStore: ProfileDataStore
 ) : ViewModel() {
 
     val firstName: StateFlow<String> = profileDataStore.profileFlow
@@ -57,6 +59,14 @@ class ProfileViewModel @Inject constructor(
 
     fun onWeightGoalChange(value: String) {
         _uiState.update { it.copy(weightGoal = value) }
+    }
+
+    fun onFirstNameChange(name: String) {
+        _uiState.update { it.copy(firstName = name) }
+    }
+
+    fun onLastNameChange(name: String) {
+        _uiState.update { it.copy(lastName = name) }
     }
 
     fun onDietTypeSelected(id: Int) {
@@ -103,6 +113,9 @@ class ProfileViewModel @Inject constructor(
             profileRepository.getAllDietTypes()
                 .onSuccess { list -> _uiState.update { it.copy(allDietTypes = list) } }
                 .onFailure { e -> emitMessage(e.localizedMessage ?: "Failed to load diet types") }
+            profileRepository.getRecommendedDiets()
+                .onSuccess { list -> _uiState.update { it.copy(recommendedDietTypes = list) } }
+                .onFailure { e -> emitMessage(e.localizedMessage ?: "Failed to load recommended diets") }
             setLoading(false)
         }
     }
@@ -124,6 +137,27 @@ class ProfileViewModel @Inject constructor(
                 .onSuccess { list -> _uiState.update { it.copy(allActivityLevels = list) } }
                 .onFailure { e -> emitMessage(e.localizedMessage ?: "Failed to load activity levels") }
             setLoading(false)
+        }
+    }
+
+    fun updateAccount(onResult: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            setLoading(true)
+            val firstName = uiState.value.firstName.ifBlank { null }
+            val lastName = uiState.value.lastName.ifBlank { null }
+            authRepository.update(
+                firstName = firstName,
+                lastName = lastName
+            )
+                .onSuccess {
+                    profileDataStore.saveFirstName(firstName ?: "")
+                    profileDataStore.saveLastName(lastName ?: "")
+                    onResult(true)
+                }
+                .onFailure { e ->
+                    emitMessage(e.localizedMessage ?: "Failed to update user info")
+                    onResult(false)
+                }
         }
     }
 

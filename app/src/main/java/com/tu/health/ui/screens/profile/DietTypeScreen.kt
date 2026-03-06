@@ -125,6 +125,8 @@ fun DietTypeScreen(
                     ) {
                         CurrentDietCard(selectedDietType)
 
+                        RecommendedDietTypes(uiState.recommendedDietTypes)
+
                         Text(
                             text = "Change your diet type",
                             style = MaterialTheme.typography.titleMedium,
@@ -184,6 +186,50 @@ private fun CurrentDietCard(selectedDietType: DietTypeDTO?) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecommendedDietTypes(recommendedDietTypes: List<DietTypeDTO>) {
+    ElevatedCard(
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                "Recommended Diets",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (recommendedDietTypes.isEmpty()) {
+                Text(
+                    text = "Not set",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    recommendedDietTypes.forEach { diet ->
+                        AssistChip(
+                            onClick = {},
+                            label = {
+                                Text(
+                                    text = diet.name,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        )
+                    }
+                }
             }
         }
     }
