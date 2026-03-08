@@ -48,29 +48,29 @@ fun AuthenticationScreen(
                     .fillMaxWidth()
                     .padding(top = 60.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 16.dp)
+                ) {
                     Text(
                         text = "Welcome to",
-                        fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                        fontWeight = MaterialTheme.typography.displaySmall.fontWeight,
+                        style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onBackground
                     )
 
                     Text(
                         text = brandName,
-                        fontSize = MaterialTheme.typography.displayMedium.fontSize,
+                        style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.secondary,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
-
-                MaterialTheme.colorScheme.secondary
-
                 Surface(
-                    modifier = Modifier
-                        .size(120.dp),
+                    modifier = Modifier.size(96.dp),
                     shape = CircleShape,
                     color = Color.White,
                     tonalElevation = 0.dp,
@@ -79,13 +79,13 @@ fun AuthenticationScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(20.dp),
+                            .padding(18.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.health),
                             contentDescription = "App Logo",
-                            modifier = Modifier.size(70.dp),
+                            modifier = Modifier.size(56.dp),
                         )
                     }
                 }
