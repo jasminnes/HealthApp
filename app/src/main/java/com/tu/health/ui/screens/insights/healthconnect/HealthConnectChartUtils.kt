@@ -18,11 +18,11 @@ fun hcMetricValue(metric: HealthConnectMetric, p: HealthConnectPointDTO): Double
 fun hcAvgValue(metric: HealthConnectMetric, data: HealthConnectDetailsDTO): Double {
     val a = data.summary.avg
     return when (metric) {
-        HealthConnectMetric.STEPS -> a.steps
-        HealthConnectMetric.SLEEP_MIN -> a.sleepMin
-        HealthConnectMetric.EXERCISE_MIN -> a.exerciseMin
-        HealthConnectMetric.ACTIVE_KCAL -> a.activeKcal
-        HealthConnectMetric.WORKOUTS -> a.workouts
+        HealthConnectMetric.STEPS -> a.steps ?: 0.0
+        HealthConnectMetric.SLEEP_MIN -> a.sleepMin ?: 0.0
+        HealthConnectMetric.EXERCISE_MIN -> a.exerciseMin ?: 0.0
+        HealthConnectMetric.ACTIVE_KCAL -> a.activeKcal ?: 0.0
+        HealthConnectMetric.WORKOUTS -> a.workouts ?: 0.0
     }
 }
 

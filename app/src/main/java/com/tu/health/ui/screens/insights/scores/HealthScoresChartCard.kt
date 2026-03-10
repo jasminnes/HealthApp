@@ -45,9 +45,9 @@ fun HealthScoresChartCard(data: HealthScoresDTO) {
         ) {
             Text("Scores over time", style = MaterialTheme.typography.titleMedium)
 
-            if (points.isEmpty()) {
+            if (points.count() <= 3) {
                 Text(
-                    "No scores for this period yet.",
+                    "No data available to visualize yet.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

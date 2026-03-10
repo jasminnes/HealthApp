@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 @Composable
 fun BodyMeasurementsStep(
@@ -37,11 +38,16 @@ private fun MeasurementSlider(
     onChange: (Float) -> Unit
 ) {
     Spacer(Modifier.height(12.dp))
-    Text("$label: ${value.toInt()}")
+
+    Text("$label: ${value.toInt()}.0")
+
     Slider(
         value = value,
-        onValueChange = onChange,
+        onValueChange = { newValue ->
+            onChange(newValue.roundToInt().toFloat())
+        },
         valueRange = range,
+        steps = (range.endInclusive - range.start).toInt() - 1,
         colors = SliderDefaults.colors(
             thumbColor = MaterialTheme.colorScheme.surface,
             activeTrackColor = MaterialTheme.colorScheme.surfaceDim

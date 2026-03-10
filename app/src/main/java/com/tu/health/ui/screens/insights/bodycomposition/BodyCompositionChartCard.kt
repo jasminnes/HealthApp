@@ -56,9 +56,9 @@ fun BodyCompositionChartCard(
 
             MetricTabs(selected = metric, onSelected = onMetricChange)
 
-            if (points.isEmpty()) {
+            if (points.count() <= 3) {
                 Text(
-                    "No body composition data for this period.",
+                    "No data available to visualize yet.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

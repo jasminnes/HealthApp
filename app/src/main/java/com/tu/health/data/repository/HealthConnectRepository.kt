@@ -1,5 +1,7 @@
 package com.tu.health.data.repository
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
@@ -80,7 +82,7 @@ class HealthConnectRepository @Inject constructor(
         )
     }
 
-    suspend fun readHrvRmssdSummary(date: LocalDate): HrvDaySummary = withContext(Dispatchers.IO) {
+    suspend fun readHrvSummary(date: LocalDate): HrvDaySummary = withContext(Dispatchers.IO) {
         val (start, end) = dayRange(date)
 
         val records = client.readRecords(
@@ -102,6 +104,7 @@ class HealthConnectRepository @Inject constructor(
         HrvDaySummary(avgRmssdMs = avg, latestRmssdMs = latest)
     }
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     suspend fun readSleepSummaryForDate(date: LocalDate): SleepSummary = withContext(Dispatchers.IO) {
         val zone = ZoneId.systemDefault()
 
@@ -178,10 +181,11 @@ class HealthConnectRepository @Inject constructor(
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     suspend fun readHealthSnapshotForDate(date: LocalDate): HealthSnapshot = withContext(Dispatchers.IO) {
         val steps = readStepsTotal(date)
         val hr = readHeartRateSummary(date)
-        val hrv = readHrvRmssdSummary(date)
+        val hrv = readHrvSummary(date)
         val sleep = readSleepSummaryForDate(date)
         val exercise = readExerciseSummary(date)
 

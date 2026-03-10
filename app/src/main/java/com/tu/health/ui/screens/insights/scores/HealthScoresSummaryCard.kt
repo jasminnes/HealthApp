@@ -15,7 +15,6 @@ fun HealthScoresSummaryCard(
 ) {
     val latest = data.summary.latest
     val avg = data.summary.avg
-    val delta = data.summary.delta
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -28,7 +27,7 @@ fun HealthScoresSummaryCard(
             Text("Quick summary", style = MaterialTheme.typography.titleMedium)
 
             Text(
-                "Latest total: ${latest.total?.roundToInt() ?: "—"} • Avg: ${avg.total.roundToInt()}",
+                "Latest total: ${latest.total?.roundToInt() ?: "—"} • Avg: ${avg.total?.roundToInt()}",
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -67,7 +66,7 @@ fun HealthScoresSummaryCard(
 }
 
 @Composable
-private fun ScoreRow(title: String, latest: Double?, avg: Double) {
+private fun ScoreRow(title: String, latest: Double?, avg: Double?) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
@@ -81,7 +80,7 @@ private fun ScoreRow(title: String, latest: Double?, avg: Double) {
             )
         }
         Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
-            Text("Avg: ${avg.roundToInt()}", style = MaterialTheme.typography.bodySmall)
+            Text("Avg: ${avg?.roundToInt()}", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

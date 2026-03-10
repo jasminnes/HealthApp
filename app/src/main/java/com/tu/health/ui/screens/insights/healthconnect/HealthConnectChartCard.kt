@@ -56,9 +56,9 @@ fun HealthConnectChartCard(
                 onSelected = onMetricChange
             )
 
-            if (points.isEmpty()) {
+            if (points.count() <= 3) {
                 Text(
-                    "No Health Connect data for this period yet.",
+                    "No data available to visualize yet.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

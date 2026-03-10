@@ -4,13 +4,13 @@ import com.squareup.moshi.Json
 
 data class HealthScoreValuesDTO(
     @Json(name = "total")
-    val total: Double,
+    val total: Double?,
     @Json(name = "activity")
-    val activity: Double,
+    val activity: Double?,
     @Json(name = "recovery")
-    val recovery: Double,
+    val recovery: Double?,
     @Json(name = "nutrition")
-    val nutrition: Double,
+    val nutrition: Double?,
     @Json(name = "body_composition")
-    val bodyComposition: Double
+    val bodyComposition: Double?
 )

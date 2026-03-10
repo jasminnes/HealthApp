@@ -23,6 +23,7 @@ import com.tu.health.ui.components.ConfirmationDialog
 import com.tu.health.viewmodels.profile.bodyMeasurements.BodyMeasurementsViewModel
 import com.tu.health.viewmodels.profile.ProfileUiEvent
 import kotlinx.coroutines.flow.collectLatest
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -199,12 +200,12 @@ private fun MeasurementRowCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Weight: ${m.weight} kg",
+                    text = "Weight: ${formatNumber2(m.weight)} kg",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Waist: ${m.waist} cm • Neck: ${m.neck} cm",
+                    text = "Waist: ${formatNumber2(m.waist)} cm • Neck: ${formatNumber2(m.neck)} cm",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -359,3 +360,9 @@ private fun String.toFloatOrNullSmart(): Float? =
 
 private fun formatDateForUi(createdAt: String): String =
     createdAt.replace("T", " ").take(16)
+
+
+private fun formatNumber2(value: Number?): String {
+    val v = value?.toDouble() ?: 0.0
+    return String.format(Locale.US, "%.2f", v)
+}

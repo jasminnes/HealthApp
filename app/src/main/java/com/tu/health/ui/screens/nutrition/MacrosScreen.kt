@@ -384,7 +384,7 @@ private fun TrackedFoodsCard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Today foods",
+                text = "Today's food",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
