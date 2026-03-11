@@ -57,7 +57,7 @@ fun NutritionMacrosChartCard(
 
             MetricTabs(selected = metric, onSelected = onMetricChange)
 
-            if (points.isEmpty()) {
+            if (points.count() <= 3) {
                 Text(
                     "No tracked nutrition for this period yet.",
                     style = MaterialTheme.typography.bodyMedium,
