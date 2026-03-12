@@ -133,8 +133,10 @@ fun RecommendationDetailsScreen(
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold
                         )
-                        Text(rec.reason, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                        Text(
+                            formatKey(rec.reason),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )                    }
                 }
             }
 
@@ -200,13 +202,6 @@ fun RecommendationDetailsScreen(
 
 @Composable
 private fun EvidenceCard(evidence: Map<String, Any>) {
-
-    fun formatKey(key: String): String {
-        return key
-            .replace("_", " ")
-            .replaceFirstChar { it.uppercase() }
-    }
-
     ElevatedCard(
         shape = RoundedCornerShape(18.dp),
         modifier = Modifier.fillMaxWidth()
@@ -233,11 +228,17 @@ private fun EvidenceCard(evidence: Map<String, Any>) {
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        v.toString(),
+                        formatKey(v.toString()),
                         fontWeight = FontWeight.Medium
                     )
                 }
             }
         }
     }
+}
+
+private fun formatKey(key: String): String {
+    return key
+        .replace("_", " ")
+        .replaceFirstChar { it.uppercase() }
 }
