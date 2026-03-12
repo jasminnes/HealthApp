@@ -26,6 +26,7 @@ data class MacrosUiState(
     val selectedId: Int? = null,
     val name: String = "",
     val quantity: Float = 100f,
+    val unit: String = "g",
     val calories: Float = 100f,
     val protein: Float = 100f,
     val fat: Float = 100f,

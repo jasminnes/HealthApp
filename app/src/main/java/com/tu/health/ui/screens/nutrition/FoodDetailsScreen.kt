@@ -41,7 +41,6 @@ fun FoodDetailsScreen(
     val trackedFoods = state.trackedFoods
     val isLoading = state.isLoading
 
-
     var editOpen by remember { mutableStateOf(false) }
     var deleteOpen by remember { mutableStateOf(false) }
 
@@ -97,8 +96,7 @@ fun FoodDetailsScreen(
                             )
 
                             Text(
-                                text = "${food.quantity.pretty1()} g " +
-                                        "• ${food.calories.roundToInt()} kcal",
+                                text = "${food.quantity.pretty1()} ${food.unit} • ${food.calories.roundToInt()} kcal",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -146,6 +144,7 @@ fun FoodDetailsScreen(
     if (editOpen && food != null) {
         EditQuantityDialog(
             initialQuantity = food.quantity,
+            unit = food.unit,
             onDismiss = { editOpen = false },
             onSave = { newQty ->
                 viewModel.loadUpdateData(food)
@@ -174,24 +173,42 @@ fun FoodDetailsScreen(
 
 @Composable
 private fun MacroLine(label: String, grams: Float) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-        Text("${grams.pretty1()} g", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            "${grams.pretty1()} g",
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @Composable
 private fun EditQuantityDialog(
     initialQuantity: Float,
+    unit: String,
     onDismiss: () -> Unit,
     onSave: (Float) -> Unit
 ) {
-    var text by remember { mutableStateOf(if (initialQuantity == initialQuantity.toInt().toFloat())
-        initialQuantity.toInt().toString() else initialQuantity.toString()
-    ) }
+    var text by remember {
+        mutableStateOf(
+            if (initialQuantity == initialQuantity.toInt().toFloat()) {
+                initialQuantity.toInt().toString()
+            } else {
+                initialQuantity.toString()
+            }
+        )
+    }
 
     val parsed = text.replace(",", ".").toFloatOrNull()
     val isValid = parsed != null && parsed > 0f && parsed <= 5000f
+    val unitLabel = if (unit == "ml") "milliliters" else "grams"
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -199,15 +216,17 @@ private fun EditQuantityDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    "Enter grams. Only quantity can be edited.",
+                    "Enter $unitLabel. Only quantity can be edited.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text("Quantity (g)") },
+                    label = { Text("Quantity ($unit)") },
                     supportingText = {
-                        if (!isValid && text.isNotBlank()) Text("Please enter a valid number > 0")
+                        if (!isValid && text.isNotBlank()) {
+                            Text("Please enter a valid number > 0")
+                        }
                     },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -229,15 +248,19 @@ private fun EditQuantityDialog(
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                 ),
                 onClick = { onSave(parsed!!) }
-            ) { Text("Save") }
+            ) {
+                Text("Save")
+            }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
                 colors = ButtonDefaults.textButtonColors(
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            ) { Text("Cancel") }
+            ) {
+                Text("Cancel")
+            }
         }
     )
 }

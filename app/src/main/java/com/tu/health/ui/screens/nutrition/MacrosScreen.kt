@@ -2,6 +2,7 @@ package com.tu.health.ui.screens.nutrition
 
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -76,12 +77,14 @@ fun MacrosScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .consumeWindowInsets(padding)
                 .padding(start = 16.dp, top = 6.dp, end = 16.dp)
         ) {
             when {
@@ -433,7 +436,7 @@ private fun TrackedFoodRow(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "${food.quantity.pretty1()} g",
+                text = "${food.quantity.pretty1()} ${food.unit}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

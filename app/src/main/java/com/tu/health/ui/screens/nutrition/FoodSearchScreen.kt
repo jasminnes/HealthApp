@@ -59,7 +59,8 @@ fun FoodSearchScreen(
                     }
                 }
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -105,6 +106,7 @@ fun FoodSearchScreen(
                         onClick = {
                             viewModel.onNameChange(item.name)
                             viewModel.onQuantityChange(100f)
+                            viewModel.onUnitChange(item.unit)
                             viewModel.onCaloriesChange(item.calories)
                             viewModel.onProteinChange(item.protein)
                             viewModel.onCarbsChange(item.carbs)
@@ -147,7 +149,7 @@ private fun SearchResultRow(
                 text = "${item.calories.roundToInt()} kcal " +
                         "• P ${item.protein.pretty1()}g " +
                         "• C ${item.carbs.pretty1()}g " +
-                        "• F ${item.fat.pretty1()}g (per 100g)",
+                        "• F ${item.fat.pretty1()}g (per 100${item.unit})",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

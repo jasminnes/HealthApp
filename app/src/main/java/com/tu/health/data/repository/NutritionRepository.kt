@@ -25,7 +25,8 @@ class NutritionRepository @Inject constructor(
         calories: Float,
         carbs: Float,
         fats: Float,
-        protein: Float
+        protein: Float,
+        unit: String
     ): Result<TrackedFoodDTO> {
         val request = TrackedFoodRequest(
             name = name,
@@ -33,7 +34,8 @@ class NutritionRepository @Inject constructor(
             calories = calories,
             fat = fats,
             protein = protein,
-            carbs = carbs
+            carbs = carbs,
+            unit = unit
         )
         return safeCall { api.createTrackedFood(request = request) }
     }
@@ -45,7 +47,8 @@ class NutritionRepository @Inject constructor(
         calories: Float,
         carbs: Float,
         fats: Float,
-        protein: Float
+        protein: Float,
+        unit: String
     ): Result<TrackedFoodDTO> {
         val request = TrackedFoodRequest(
             name = name,
@@ -53,7 +56,8 @@ class NutritionRepository @Inject constructor(
             calories = calories,
             fat = fats,
             protein = protein,
-            carbs = carbs
+            carbs = carbs,
+            unit = unit
         )
         return safeCall { api.updateTrackedFood(id = id, request = request) }
     }

@@ -9,6 +9,7 @@ import com.tu.health.data.remote.request.HrvRequest
 import com.tu.health.data.remote.request.SleepRequest
 import javax.inject.Inject
 import com.tu.health.data.remote.api.HealthAPI
+import com.tu.health.data.remote.dto.DetailDTO
 import com.tu.health.data.remote.dto.HealthScoreDTO
 import com.tu.health.data.remote.dto.RecommendationsResponseDTO
 import com.tu.health.data.remote.request.RecommendationsRequest
@@ -62,7 +63,7 @@ class HealthRepository @Inject constructor(
     suspend fun updateRecommendation(
         id: Int,
         status: String
-    ): Result<RecommendationsResponseDTO> {
+    ): Result<DetailDTO> {
         val request = RecommendationsRequest(
             status = status,
         )

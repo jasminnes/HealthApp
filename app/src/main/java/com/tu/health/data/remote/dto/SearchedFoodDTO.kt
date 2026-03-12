@@ -5,6 +5,7 @@ import com.squareup.moshi.Json
 data class SearchedFoodDTO(
     val name: String,
     val calories: Float,
+    val unit: String,
 
     @Json(name = "protein_g")
     val protein: Float,

@@ -30,6 +30,7 @@ class MacrosViewModel @Inject constructor(
     fun onProteinChange(value: Float) = _uiState.update { it.copy(protein = value) }
     fun onFatChange(value: Float) = _uiState.update { it.copy(fat = value) }
     fun onQuantityChange(value: Float) = _uiState.update { it.copy(quantity = value) }
+    fun onUnitChange(value: String) = _uiState.update { it.copy(unit = value) }
 
     fun getMacroPlan() {
         viewModelScope.launch {
@@ -83,7 +84,8 @@ class MacrosViewModel @Inject constructor(
                 calories = s.calories,
                 carbs = s.carbs,
                 fats = s.fat,
-                protein = s.protein
+                protein = s.protein,
+                unit = s.unit
             ).onSuccess {
                 getTodayFood()
             }.onFailure {
@@ -114,7 +116,8 @@ class MacrosViewModel @Inject constructor(
                 calories = s.calories,
                 carbs = s.carbs,
                 fats = s.fat,
-                protein = s.protein
+                protein = s.protein,
+                unit = s.unit
             ).onSuccess {
                 getTodayFood()
             }.onFailure {
@@ -149,6 +152,7 @@ class MacrosViewModel @Inject constructor(
                 selectedId = t.id,
                 name = t.name,
                 quantity = t.quantity,
+                unit = t.unit,
                 calories = t.calories,
                 protein = t.protein,
                 carbs = t.carbs,
