@@ -38,7 +38,7 @@ fun HealthConnectDetailsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Health Connect", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = { Text("Activity & Recovery", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.background

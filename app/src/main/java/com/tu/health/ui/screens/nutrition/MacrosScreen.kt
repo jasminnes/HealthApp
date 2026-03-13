@@ -2,7 +2,6 @@ package com.tu.health.ui.screens.nutrition
 
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -69,9 +69,31 @@ fun MacrosScreen(
             TopAppBar(
                 title = { Text("Macros") },
                 actions = {
-                    IconButton(onClick = { navController.navigate("food-search") }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add food")
+                    IconButton(
+                        onClick = {
+                            viewModel.getMacroPlan()
+                            viewModel.getTodayFood()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = "Refresh"
+                        )
                     }
+
+                    FilledTonalButton(
+                        onClick = { navController.navigate("food-search") },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add food"
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Add")
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
