@@ -21,10 +21,10 @@ interface HealthAPI {
     @GET("health/score/")
     suspend fun getHealthScore() : HealthScoreDTO
 
-    @GET("health/recommendations/")
+    @GET("/recommendations/")
     suspend fun getRecommendations() : RecommendationsResponseDTO
 
-    @PATCH("health/recommendations/{id}/")
+    @PATCH("/recommendations/{id}/")
     suspend fun updateRecommendation(
         @Path("id") id: Int,
         @Body request: RecommendationsRequest

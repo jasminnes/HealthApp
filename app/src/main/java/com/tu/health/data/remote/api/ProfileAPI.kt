@@ -49,29 +49,29 @@ interface ProfileAPI {
         @Body request: UpdateUserConditionsRequest
     ): ProfileDTO
 
-    @GET("user/measurements/")
+    @GET("metabolic/measurements/")
     suspend fun getBodyMeasurementsAll(
     ): List<BodyMeasurementDTO>
 
-    @POST("user/measurements/")
+    @POST("metabolic/measurements/")
     suspend fun createBodyMeasurement(
         @Body request: BodyMeasurementRequest
     ): BodyMeasurementDTO
 
-    @DELETE("user/measurements/{id}/")
+    @DELETE("metabolic/measurements/{id}/")
     suspend fun deleteBodyMeasurement(
         @Path("id") id: Int,
     )
 
-    @GET("user/conditions/")
+    @GET("metabolic/conditions/")
     suspend fun getAllConditions(): List<ConditionDTO>
 
-    @GET("diets/top-recommended-diets/")
+    @GET("recommendations/top-recommended-diets/")
     suspend fun getRecommendedDiets(): List<DietTypeDTO>
 
-    @GET("diets/type/")
+    @GET("nutrition/type/")
     suspend fun getAllDietTypes(): List<DietTypeDTO>
 
-    @GET("activity/level/")
+    @GET("metabolic/level/")
     suspend fun getAllActivityLevels(): List<ActivityDTO>
 }
