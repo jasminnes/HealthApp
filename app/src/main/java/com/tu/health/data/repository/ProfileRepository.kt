@@ -1,5 +1,6 @@
 package com.tu.health.data.repository
 
+import com.tu.health.data.local.ProfileDataStore
 import com.tu.health.data.remote.api.ProfileAPI
 import com.tu.health.data.remote.dto.ActivityDTO
 import com.tu.health.data.remote.dto.BodyMeasurementDTO
@@ -12,11 +13,30 @@ import com.tu.health.data.remote.request.UpdateUserConditionsRequest
 import com.tu.health.data.remote.request.UpdateUserDietTypeRequest
 import com.tu.health.data.remote.request.UpdateUserHeightRequest
 import com.tu.health.data.remote.request.UpdateUserWeightGoalRequest
+import com.tu.health.data.local.SecureTokenStore
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class ProfileRepository @Inject constructor(
     private val api: ProfileAPI,
-) {
+    private val tokenStore: SecureTokenStore,
+    private val profileDataStore: ProfileDataStore,
+    ) {
+
+    val profileFlow = profileDataStore.profileFlow
+
+    suspend fun saveFirstName(firstName: String) {
+        profileDataStore.saveFirstName(firstName)
+    }
+
+    suspend fun saveLastName(lastName: String) {
+        profileDataStore.saveLastName(lastName)
+    }
+
+    suspend fun awaitAccessToken() {
+        tokenStore.accessToken.first { !it.isNullOrBlank() }
+    }
+
     suspend fun getProfile(): Result<ProfileDTO> =
         safeCall { api.getProfile() }
 

@@ -1,5 +1,7 @@
 package com.tu.health.viewmodels.health
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tu.health.data.repository.HealthRepository
@@ -62,6 +64,7 @@ class HealthScoreViewModel @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     fun syncHealthOncePerDay() {
         viewModelScope.launch {
             healthSyncRepository.syncYesterdayOncePerDay()

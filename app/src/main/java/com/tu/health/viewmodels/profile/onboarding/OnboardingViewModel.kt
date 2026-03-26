@@ -2,7 +2,6 @@ package com.tu.health.viewmodels.profile.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tu.health.data.local.SecureTokenStore
 import com.tu.health.data.repository.ProfileRepository
 import com.tu.health.viewmodels.profile.ProfileUiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,7 +14,6 @@ import javax.inject.Inject
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
-    tokenStore: SecureTokenStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
@@ -26,7 +24,7 @@ class OnboardingViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            tokenStore.accessToken.first { !it.isNullOrBlank() }
+            profileRepository.awaitAccessToken()
             preloadLists()
         }
     }

@@ -1,6 +1,8 @@
 package com.tu.health.viewmodels.profile.onboarding
 
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tu.health.data.healthconnect.HcAvailability
@@ -39,6 +41,7 @@ class HealthConnectViewModel @Inject constructor(
     private val _state = MutableStateFlow<HcUiState>(HcUiState.Checking)
     val state: StateFlow<HcUiState> = _state
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     fun refresh() {
         viewModelScope.launch {
             try {

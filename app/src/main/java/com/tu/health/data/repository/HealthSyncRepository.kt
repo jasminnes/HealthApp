@@ -1,5 +1,7 @@
 package com.tu.health.data.repository
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.tu.health.data.healthconnect.HealthReadPermissions
 import com.tu.health.data.local.ProfileDataStore
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +25,7 @@ class HealthSyncRepository @Inject constructor(
     private val healthRepository: HealthRepository
 ) {
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     suspend fun syncYesterdayOncePerDay(): HealthSyncResult = withContext(Dispatchers.IO) {
         val zone = ZoneId.systemDefault()
         val today = LocalDate.now(zone)

@@ -22,6 +22,7 @@ class AuthRepository @Inject constructor(
     private val profileDataStore: ProfileDataStore
 ) {
     val refreshTokenFlow = secureTokenStore.refreshToken
+    val accessToken = secureTokenStore.accessToken
 
     suspend fun registerUser(
         email: String,

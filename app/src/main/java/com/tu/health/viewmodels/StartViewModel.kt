@@ -3,7 +3,7 @@ package com.tu.health.viewmodels
 import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tu.health.data.local.SecureTokenStore
+import com.tu.health.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,10 +11,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
 
 @HiltViewModel
 class StartViewModel @Inject constructor(
-    private val secureTokenStore: SecureTokenStore
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _showAuth = MutableStateFlow(true)
@@ -25,7 +26,7 @@ class StartViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            secureTokenStore.accessToken.collect { token ->
+            authRepository.accessToken.collectLatest { token ->
                 _showAuth.value = token.isNullOrBlank() || isJwtExpired(token)
                 _isLoading.value = false
             }

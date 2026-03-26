@@ -2,7 +2,6 @@ package com.tu.health.viewmodels.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tu.health.data.local.ProfileDataStore
 import com.tu.health.data.repository.ProfileRepository
 import com.tu.health.data.remote.dto.ActivityDTO
 import com.tu.health.data.remote.dto.DietTypeDTO
@@ -17,18 +16,17 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val authRepository: AuthRepository,
-    private val profileDataStore: ProfileDataStore
 ) : ViewModel() {
 
-    val firstName: StateFlow<String> = profileDataStore.profileFlow
+    val firstName: StateFlow<String> = profileRepository.profileFlow
         .map { it.firstName }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
-    val lastName: StateFlow<String> = profileDataStore.profileFlow
+    val lastName: StateFlow<String> = profileRepository.profileFlow
         .map { it.lastName }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
-    val email: StateFlow<String> = profileDataStore.profileFlow
+    val email: StateFlow<String> = profileRepository.profileFlow
         .map { it.email }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
@@ -150,8 +148,8 @@ class ProfileViewModel @Inject constructor(
                 lastName = lastName
             )
                 .onSuccess {
-                    profileDataStore.saveFirstName(firstName ?: "")
-                    profileDataStore.saveLastName(lastName ?: "")
+                    profileRepository.saveFirstName(firstName ?: "")
+                    profileRepository.saveLastName(lastName ?: "")
                     onResult(true)
                 }
                 .onFailure { e ->
