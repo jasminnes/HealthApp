@@ -101,10 +101,7 @@ fun HealthConnectChartCard(
             val yAxisData = AxisData.Builder()
                 .steps(5)
                 .labelAndAxisLinePadding(16.dp)
-                .labelData { stepIndex ->
-                    val v = (niceMax / 5f) * stepIndex
-                    hcFormatY(metric, v)
-                }
+                .labelData { "" }
                 .build()
 
             val seriesColor = when (metric) {

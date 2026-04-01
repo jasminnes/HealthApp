@@ -26,6 +26,7 @@ import co.yml.charts.ui.linechart.model.Line
 import co.yml.charts.ui.linechart.model.LineChartData
 import co.yml.charts.ui.linechart.model.LinePlotData
 import co.yml.charts.ui.linechart.model.LineStyle
+import co.yml.charts.ui.linechart.model.LineType
 import co.yml.charts.ui.linechart.model.SelectionHighlightPoint
 import com.tu.health.data.remote.dto.insights.nutrition.NutritionDetailsDTO
 import com.tu.health.ui.components.LegendRow2
@@ -122,10 +123,7 @@ fun NutritionMacrosChartCard(
 
             val yAxisData = AxisData.Builder()
                 .steps(5)
-                .labelData { stepIndex ->
-                    val v = (niceMax / 5f) * stepIndex
-                    nutritionFormatY(metric, v)
-                }
+                .labelData { "" }
                 .build()
 
             val consumedColor = Color(0xFFDFFF75)

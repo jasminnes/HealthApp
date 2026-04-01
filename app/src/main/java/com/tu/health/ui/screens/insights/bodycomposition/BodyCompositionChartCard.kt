@@ -143,10 +143,7 @@ private fun CombinedChart(
 
     val yAxisData = AxisData.Builder()
         .steps(5)
-        .labelData { stepIndex ->
-            val v = (niceMaxKg / 5f) * stepIndex
-            bodyFormatKgAxis(v, weightUnit)
-        }
+        .labelData { "" }
         .build()
 
     val weightColor = MaterialTheme.colorScheme.primary
@@ -224,7 +221,7 @@ private fun CombinedChart(
         selectedIndex = selectedIndex,
         lastIndex = lastIndex,
         referenceSeries = weightSeries.ifEmpty { lbmSeries.ifEmpty { fatMassSeries } },
-        onSelectIndex = { idx -> selectedIndex = idx.coerceIn(0, trimmed.lastIndex) }
+        onSelectIndex = {  }
     )
 }
 
@@ -278,10 +275,7 @@ private fun WaistChart(
 
     val yAxisData = AxisData.Builder()
         .steps(5)
-        .labelData { stepIndex ->
-            val v = (niceMax / 5f) * stepIndex
-            bodyFormatKgAxis(v, waistUnit)
-        }
+        .labelData { "" }
         .build()
 
     val waistColor = MaterialTheme.colorScheme.primary
@@ -306,8 +300,10 @@ private fun WaistChart(
     WaistSelectedPanel(
         selectedDate = selected.date,
         waist = selected.waist,
+        avgWaist = avg.toDouble(),
         waistUnit = waistUnit,
-        waistColor = waistColor
+        waistColor = waistColor,
+        avgColor = avgColor
     )
 
     val waistLine = Line(
@@ -336,7 +332,7 @@ private fun WaistChart(
         selectedIndex = selectedIndex,
         lastIndex = lastIndex,
         referenceSeries = series,
-        onSelectIndex = { idx -> selectedIndex = idx.coerceIn(0, trimmed.lastIndex) }
+        onSelectIndex = {  }
     )
 }
 
@@ -465,8 +461,10 @@ private fun BodyCompositionSelectedPanel(
 private fun WaistSelectedPanel(
     selectedDate: String?,
     waist: Double?,
+    avgWaist: Double?,
     waistUnit: String,
-    waistColor: Color
+    waistColor: Color,
+    avgColor: Color
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -487,6 +485,12 @@ private fun WaistSelectedPanel(
                 valueText = waist?.let { bodyFmtValue(it, waistUnit) } ?: "—",
                 color = waistColor,
                 emphasized = true
+            )
+
+            BodyValueRow(
+                label = "Avg waist ($waistUnit)",
+                valueText = avgWaist?.let { bodyFmtValue(it, waistUnit) } ?: "—",
+                color = avgColor
             )
         }
     }

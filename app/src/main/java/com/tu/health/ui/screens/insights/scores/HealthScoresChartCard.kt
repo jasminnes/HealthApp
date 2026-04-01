@@ -114,10 +114,7 @@ fun HealthScoresChartCard(data: HealthScoresDTO) {
             val yAxisData = AxisData.Builder()
                 .steps(5)
                 .labelAndAxisLinePadding(16.dp)
-                .labelData { stepIndex ->
-                    val v = (niceMax / 5f) * stepIndex
-                    v.roundToInt().toString()
-                }
+                .labelData { "" }
                 .build()
             val totalColor = Color(0xFFDFFF75)
             val activityColor = Color(0xFF4EE8DE)

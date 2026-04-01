@@ -1,6 +1,8 @@
 package com.tu.health.ui.screens.health
 
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +35,7 @@ import com.tu.health.viewmodels.health.RecommendationStatus
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
 
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HealthScoreScreen(
