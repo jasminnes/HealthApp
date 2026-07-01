@@ -21,7 +21,7 @@ class AuthRepository @Inject constructor(
     private val secureTokenStore: SecureTokenStore,
     private val profileDataStore: ProfileDataStore
 ) {
-    val refreshTokenFlow = secureTokenStore.refreshToken
+    val refreshToken = secureTokenStore.refreshToken
     val accessToken = secureTokenStore.accessToken
 
     suspend fun registerUser(
@@ -85,7 +85,7 @@ class AuthRepository @Inject constructor(
 
     suspend fun logout(): Result<DetailDTO> =
         safeCall {
-            val request = LogoutRequest(refreshToken = refreshTokenFlow.first() ?: "")
+            val request = LogoutRequest(refreshToken = refreshToken.first() ?: "")
             val response = api.logout(request)
 
             profileDataStore.clear()

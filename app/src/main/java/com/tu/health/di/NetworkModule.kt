@@ -48,7 +48,8 @@ object NetworkModule {
             .withNullSerialization()
 
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8125/")
+            //.baseUrl("http://10.0.2.2:8125/")
+            .baseUrl("http://10.227.17.99:8000/")
             .client(client)
             .addConverterFactory(moshiConverterFactory)
             .build()
