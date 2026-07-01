@@ -1,5 +1,7 @@
 package com.tu.health.ui.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -36,6 +38,7 @@ import com.tu.health.ui.screens.profile.DietTypeScreen
 import com.tu.health.ui.screens.profile.HealthConditionsScreen
 import com.tu.health.viewmodels.StartViewModel
 
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @Composable
 fun NavigationGraph(
     modifier: Modifier = Modifier,

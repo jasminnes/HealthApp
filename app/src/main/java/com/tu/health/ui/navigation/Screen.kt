@@ -31,5 +31,4 @@ sealed class Screen(val route: String) {
     object InsightsHealthConnect : Screen("insights-healthconnect")
     object InsightsBodyComposition : Screen("insights-bodycomposition")
     object InsightsScores : Screen("insights-scores")
-    object InsightsRecommendations : Screen("insights-recommendations")
 }
